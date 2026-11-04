@@ -1,0 +1,7 @@
+model Phone {
+  id          String    @id @default(uuid())
+  countryCode String
+  number      String
+  employee    Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId  String?
+}

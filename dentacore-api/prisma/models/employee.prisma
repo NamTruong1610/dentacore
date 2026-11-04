@@ -1,0 +1,12 @@
+model Employee {
+  id             String    @id @default(uuid())
+  nationalId     String    @unique
+  employeeNumber String    @unique
+  firstName      String
+  middleName     String?
+  lastName       String
+  activeEmail    String
+  addresses      Address[]
+  phones         Phone[]
+  emails         Email[]
+}

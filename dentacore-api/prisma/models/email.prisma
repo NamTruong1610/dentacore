@@ -1,0 +1,6 @@
+model Email {
+  id         String    @id @default(uuid())
+  email      String
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String?
+}
