@@ -1,0 +1,14 @@
+model Role {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deleteAt        DateTime?
+  employee        Employee?        @relation(fields: [employeeId], references: [id])
+  employeeId      String?
+  rolePermissions RolePermission[]
+  permission      Permission?      @relation(fields: [permissionId], references: [id])
+  permissionId    String?
+}

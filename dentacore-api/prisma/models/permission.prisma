@@ -1,0 +1,12 @@
+model Permission {
+  id          String  @id @default(uuid())
+  action      Action
+  target      Target
+  description String?
+  roles       Role[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deleteAt        DateTime?
+  rolePermissions RolePermission[]
+}

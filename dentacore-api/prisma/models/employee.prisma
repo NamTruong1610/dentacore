@@ -2,6 +2,7 @@ model Employee {
   id             String    @id @default(uuid())
   nationalId     String    @unique
   employeeNumber String    @unique
+  password       String
   firstName      String
   middleName     String?
   lastName       String
@@ -9,4 +10,9 @@ model Employee {
   addresses      Address[]
   phones         Phone[]
   emails         Email[]
+  roles          Role[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deleteAt  DateTime?
 }

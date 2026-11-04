@@ -1,0 +1,5 @@
+enum Target {
+  EMPLOYEE
+  ROLE
+  PERMISSION
+}

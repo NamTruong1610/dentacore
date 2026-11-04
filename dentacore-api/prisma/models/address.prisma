@@ -5,4 +5,8 @@ model Address {
   city       String?
   employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deleteAt  DateTime?
 }
