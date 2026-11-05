@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { InviteStatus } from '../generated/prisma/enums.js';
+import { Prisma } from '../generated/prisma/client.js';
 
 @Injectable()
-export class UserService {
+export class EmployeeService {
   constructor(private readonly prismaService: PrismaService) { }
 
   createUninvitedEmployee(email: string) { }
 
   async hasUninvitedEmployeeWithEmail(email: string) {
-    // Check if the email is valid:
-    // – Finds at least one employee with matching primary email or secondary email in emal list who's not deleted and not yet invited
-    const employeeExists = await this.prismaService.employee.findFirst({
+    // Check if the email is valid: Found at least one employee with matching primary email or secondary email in emal list who's not deleted and not yet invited
+    const employeeRecords = await this.prismaService.employee.findMany({
       select: {
         id: true,
         emails: {
@@ -50,8 +50,16 @@ export class UserService {
         ]
       }
     })
-    if (!employeeExists) {
-      throw
+
+    if (employeeRecords.length > 1) {
+      throw new ConflictException('Multiple with this email found')
     }
+
+    const employee = employeeRecords[0];
+
+    if (!employee) throw new NotFoundException('User not found');
+
+    return employee
+
   }
 }
