@@ -1,0 +1,14 @@
+model ActivationToken {
+  id               String    @id @default(uuid())
+  tokenHash        String
+  expiresAt        DateTime
+  consumedAt       DateTime?
+  revokedAt        DateTime?
+  employeeId       String?
+  employee         Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  issuerNationalId String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deleteAt  DateTime?
+}

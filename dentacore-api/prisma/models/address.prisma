@@ -1,8 +1,9 @@
 model Address {
   id         String    @id @default(uuid())
-  street     String?
-  suburb     String?
-  city       String?
+  street     String
+  suburb     String
+  city       String
+  country    String
   employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId String?
 

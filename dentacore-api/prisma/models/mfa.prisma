@@ -1,0 +1,4 @@
+model MfaCredentials {
+  id     String @id @default(uuid())
+  secret String
+}
