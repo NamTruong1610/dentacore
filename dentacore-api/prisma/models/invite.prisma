@@ -1,4 +1,4 @@
-model ActivationToken {
+model InviteToken {
   id               String    @id @default(uuid())
   tokenHash        String
   expiresAt        DateTime

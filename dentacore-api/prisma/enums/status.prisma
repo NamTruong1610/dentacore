@@ -1,4 +1,4 @@
-enum Status {
+enum InviteStatus {
   INVITED
-  DEACTIVATED
+  UNINVITED
 }

@@ -1,20 +1,22 @@
 model Employee {
-  id               String            @id @default(uuid())
-  nationalId       String            @unique
-  employeeNumber   String            @unique
-  passwordHash     String
-  firstName        String
-  middleName       String?
-  lastName         String
-  activeEmail      String
-  status           Status
-  addresses        Address[]
-  phones           Phone[]
-  emails           Email[]
-  roles            Role[]
-  activationTokens ActivationToken[]
+  id             String        @id @default(uuid())
+  nationalId     String        @unique
+  employeeNumber String
+  passwordHash   String
+  firstName      String
+  middleName     String?
+  lastName       String
+  primaryEmail   String
+  inviteStatus   InviteStatus  @default(UNINVITED)
+  addresses      Address[]
+  phones         Phone[]
+  emails         Email[]
+  roles          Role[]
+  inviteTokens   InviteToken[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  deleteAt  DateTime?
+  deletedAt  DateTime?
+
+  @@unique([employeeNumber, updatedAt])
 }
