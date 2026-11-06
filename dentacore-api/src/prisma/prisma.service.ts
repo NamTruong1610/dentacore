@@ -10,4 +10,12 @@ export class PrismaService extends PrismaClient {
     });
     super({ adapter });
   }
+
+  async onModuleInit() {
+    await this.$connect();
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
+  }
 }
