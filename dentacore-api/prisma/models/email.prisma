@@ -6,5 +6,5 @@ model Email {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  deleteAt  DateTime?
+  deletedAt DateTime?
 }

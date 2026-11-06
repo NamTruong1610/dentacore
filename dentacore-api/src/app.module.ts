@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { EmployeeModule } from './employee/employee.module.js';
@@ -11,6 +11,7 @@ import { fromPrisma, PostgresOutboxStore } from '@nestjs/outbox/postgres';
 import { OutboxAdminModule } from './outbox-admin/outbox-admin.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { ConfigModule } from '@nestjs/config';
+import { ApiKeyMiddleware } from './common/middleware/api-key.middleware.js';
 
 @Module({
   imports: [
@@ -37,4 +38,9 @@ import { ConfigModule } from '@nestjs/config';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // '*splat' applies middleware on all routes
+    consumer.apply(ApiKeyMiddleware).forRoutes('*splat')
+  }
+}
