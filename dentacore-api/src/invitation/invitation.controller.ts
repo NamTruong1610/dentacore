@@ -6,7 +6,7 @@ import { InvitationService } from './invitation.service.js';
 export class InvitationController {
   constructor(private readonly invitationService: InvitationService) {}
   @Post()
-  inviteNewEmployee(@Body inviteEmployeeDto: InviteEmployeeDto) {
+  inviteNewEmployee(@Body() inviteEmployeeDto: InviteEmployeeDto) {
     
   }
 }

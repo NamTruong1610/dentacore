@@ -1,7 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { InviteStatus } from '../generated/prisma/enums.js';
-import { Prisma } from '../generated/prisma/client.js';
 
 @Injectable()
 export class EmployeeService {
