@@ -1,6 +1,6 @@
 model InviteToken {
   id               String    @id @default(uuid())
-  tokenHash        String
+  tokenHash        String    @unique
   expiresAt        DateTime
   consumedAt       DateTime?
   revokedAt        DateTime?

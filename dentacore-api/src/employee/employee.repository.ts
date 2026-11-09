@@ -2,33 +2,47 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InviteStatus } from "../generated/prisma/enums.js";
-import { CreateUserDto } from "./dto/create-user.dto.js";
+import { CreateEmployeeDto } from "./dto/create-employee.dto.js";
+import { Prisma } from "../generated/prisma/client.js";
 
 
 @Injectable()
 export class EmployeeRepository {
   constructor(private readonly txHost: TransactionHost<TransactionalAdapterPrisma>) { }
 
-  async createUninvitedEmployee(createUserDto: CreateUserDto) {
+  async createUninvitedEmployee(createEmployeeDto: CreateEmployeeDto) {
 
-    return await this.txHost.tx.employee.create({
-      data: {
-        nationalId: createUserDto.nationalId,
-        firstName: createUserDto.firstName,
-        middleName: createUserDto.middleName,
-        lastName: createUserDto.lastName,
-        primaryEmail: createUserDto.primaryEmail,
-        employeeNumber: createUserDto.employeeNumber
-      },
-      select: {
-        id: true,
-        firstName: true,
-        middleName: true,
-        lastName: true,
-        primaryEmail: true,
-        inviteStatus: true,
+    try {
+      return await this.txHost.tx.employee.create({
+        data: {
+          nationalId: createEmployeeDto.nationalId,
+          firstName: createEmployeeDto.firstName,
+          middleName: createEmployeeDto.middleName,
+          lastName: createEmployeeDto.lastName,
+          primaryEmail: createEmployeeDto.primaryEmail,
+          employeeNumber: createEmployeeDto.employeeNumber
+        },
+        select: {
+          id: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
+          primaryEmail: true,
+          inviteStatus: true,
+        }
+      })
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        // The .code property can be accessed in a type-safe manner
+        if (error.code === "P2002") {
+          const fields = (error.meta?.target as string[])?.join(', ');
+          throw new ConflictException(`A record with this ${fields} already exists`);
+        }
       }
-    })
+      throw error;
+    }
+
+
   }
 
 

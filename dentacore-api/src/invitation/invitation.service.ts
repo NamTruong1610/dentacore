@@ -2,14 +2,16 @@ import { BadRequestException, ConflictException, GoneException, Injectable, NotF
 import { Prisma } from '../generated/prisma/client.js';
 import { Outbox } from '@nestjs/outbox';
 import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
-import { InviteTokenValidityDto } from './dto/invite-token-check.dto.js';
+import { InviteTokenValidityDto } from './dto/invite-token-validity.dto.js';
 import { TokenService } from '../common/crypto/token.service.js';
-import { PasswordSetupDto } from './dto/invite-password-setup.dto.js';
-import { EmployeeRepository } from '../employee/employee.repository.js';
+import { InvitePasswordSetupDto } from './dto/invite-password-setup.dto.js';
+
 import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { InviteTokenRepository } from './invite.repository.js';
+import { InviteTokenRepository } from './invite-token.repository.js';
 import { MailService } from '../mail/mail.service.js';
+import { MfaService } from '../auth/mfa/mfa.service.js';
+import { EmployeeService } from '../employee/employee.service.js';
 
 type InvitePayload = { employeeId: string; email: string; issuerNationalId: string };
 
@@ -19,8 +21,9 @@ export class InvitationService {
     private readonly outbox: Outbox<Prisma.TransactionClient>,
     private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
+    private readonly mfaService: MfaService,
     private readonly mailService: MailService,
-    private readonly employeeRepo: EmployeeRepository,
+    private readonly employeeService: EmployeeService,
     private readonly inviteTokenRepo: InviteTokenRepository,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma>
   ) { }
@@ -40,13 +43,13 @@ export class InvitationService {
 
     await this.txHost.withTransaction(
       async () => {
-        const employeeRecords = await this.employeeRepo.findUninvitedByEmail(email)
+        const employeeRecords = await this.employeeService.findUninvitedByEmail(email)
         if (employeeRecords.length > 1) {
           throw new ConflictException('Users with duplicate email found')
         }
         const employee = employeeRecords[0];
         if (!employee) throw new NotFoundException('User not found');
-        const invited = await this.employeeRepo.markInvited(employeeRecords[0].id)
+        const invited = await this.employeeService.markInvited(employeeRecords[0].id)
         if (!invited) throw new ConflictException('Employee already invited or removed');
         await this.outbox.add(this.txHost.tx, {
           topic: 'employee.invited',
@@ -61,7 +64,7 @@ export class InvitationService {
   async issueInvite(msg: InvitePayload) {
     // Before the message is processed, a small window where a staff user deletes the invited user could make that user ineligible for issuance of an invite token in the database and invite email. 
     // findInvitable is a guard that closes such window
-    const employee = await this.employeeRepo.findInvitable(msg.employeeId);
+    const employee = await this.employeeService.findInvitable(msg.employeeId);
     if (!employee) return;
     const rawToken = this.tokenService.generate();
     await this.inviteTokenRepo.createInviteToken(employee.id, this.tokenService.digest(rawToken), new Date(Date.now() + this.INVITE_DURATION), msg.issuerNationalId);
@@ -81,19 +84,19 @@ export class InvitationService {
 
   }
 
-  async setNewPassword(passwordSetupDto: PasswordSetupDto) {
-    if (passwordSetupDto.rawPassword !== passwordSetupDto.retypedPassword) {
+  async setNewPassword(invitePasswordSetupDto: InvitePasswordSetupDto) {
+    if (invitePasswordSetupDto.rawPassword !== invitePasswordSetupDto.retypedPassword) {
       throw new BadRequestException('Passwords do not match');
     }
-    const inviteTokenHash = this.tokenService.digest(passwordSetupDto.inviteToken)
+    const inviteTokenHash = this.tokenService.digest(invitePasswordSetupDto.inviteToken)
     const inviteTokenRecord = await this.inviteTokenRepo.findActiveInviteToken(inviteTokenHash)
 
     if (!inviteTokenRecord) {
       throw new BadRequestException('Invite token invalid or expired')
     }
-    const passwordHash = await this.passwordHasher.hash(passwordSetupDto.rawPassword)
+    const passwordHash = await this.passwordHasher.hash(invitePasswordSetupDto.rawPassword)
 
-    const encryptedSecret = this.tokenService.generateMfaSecret()
+    const encryptedSecret = this.mfaService.generateMfaSecret()
 
     // At submission, create a pending mfa setup in Redis auth instance: { passwordHash, tokenHash, excryptedSecret } keyed by tokenHash for idempotency, and returns the uri (otpauth://...). 
     // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret 
