@@ -2,14 +2,15 @@ import { BadRequestException, ConflictException, GoneException, Injectable, NotF
 import { Prisma } from '../generated/prisma/client.js';
 import { Outbox } from '@nestjs/outbox';
 import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
-import { InviteTokenValidityDto } from './dto/invite-token-check.dto.js';
+import { InviteTokenValidityDto } from './dto/invite-token-validity.dto.js';
 import { TokenService } from '../common/crypto/token.service.js';
-import { PasswordSetupDto } from './dto/invite-password-setup.dto.js';
+import { InvitePasswordSetupDto } from './dto/invite-password-setup.dto.js';
 import { EmployeeRepository } from '../employee/employee.repository.js';
 import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { InviteTokenRepository } from './invite.repository.js';
+import { InviteTokenRepository } from './invite-token.repository.js';
 import { MailService } from '../mail/mail.service.js';
+import { MfaService } from '../auth/mfa/mfa.service.js';
 
 type InvitePayload = { employeeId: string; email: string; issuerNationalId: string };
 
@@ -19,6 +20,7 @@ export class InvitationService {
     private readonly outbox: Outbox<Prisma.TransactionClient>,
     private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
+    private readonly mfaService: MfaService,
     private readonly mailService: MailService,
     private readonly employeeRepo: EmployeeRepository,
     private readonly inviteTokenRepo: InviteTokenRepository,
@@ -81,19 +83,19 @@ export class InvitationService {
 
   }
 
-  async setNewPassword(passwordSetupDto: PasswordSetupDto) {
-    if (passwordSetupDto.rawPassword !== passwordSetupDto.retypedPassword) {
+  async setNewPassword(invitePasswordSetupDto: InvitePasswordSetupDto) {
+    if (invitePasswordSetupDto.rawPassword !== invitePasswordSetupDto.retypedPassword) {
       throw new BadRequestException('Passwords do not match');
     }
-    const inviteTokenHash = this.tokenService.digest(passwordSetupDto.inviteToken)
+    const inviteTokenHash = this.tokenService.digest(invitePasswordSetupDto.inviteToken)
     const inviteTokenRecord = await this.inviteTokenRepo.findActiveInviteToken(inviteTokenHash)
 
     if (!inviteTokenRecord) {
       throw new BadRequestException('Invite token invalid or expired')
     }
-    const passwordHash = await this.passwordHasher.hash(passwordSetupDto.rawPassword)
+    const passwordHash = await this.passwordHasher.hash(invitePasswordSetupDto.rawPassword)
 
-    const encryptedSecret = this.tokenService.generateMfaSecret()
+    const encryptedSecret = this.mfaService.generateMfaSecret()
 
     // At submission, create a pending mfa setup in Redis auth instance: { passwordHash, tokenHash, excryptedSecret } keyed by tokenHash for idempotency, and returns the uri (otpauth://...). 
     // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret 

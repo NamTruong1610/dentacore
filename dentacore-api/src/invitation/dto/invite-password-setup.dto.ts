@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, IsStrongPassword, MaxLength } from "class-validator"
 
-export class PasswordSetupDto {
+export class InvitePasswordSetupDto {
   @IsNotEmpty()
   @IsString()
   inviteToken: string

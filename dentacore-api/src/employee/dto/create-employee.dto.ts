@@ -1,7 +1,7 @@
 import { IsEmail, IsString, IsNotEmpty, IsOptional } from "class-validator"
 import { Transform } from 'class-transformer';
 
-export class CreateUserDto {
+export class CreateEmployeeDto {
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value?.trim()))
