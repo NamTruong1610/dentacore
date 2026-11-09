@@ -19,10 +19,11 @@ export class InviteTokenRepository {
     })
   }
 
-  createInviteToken(employeeId: string, tokenHash: string, expiresAt: Date, issuerNationalId: string) {
+  createInviteToken(employeeId: string, employeeEmail: string, tokenHash: string, expiresAt: Date, issuerNationalId: string) {
     return this.txHost.tx.inviteToken.create({
       data: {
         employeeId,
+        sentToEmail: employeeEmail,
         tokenHash,
         expiresAt,
         issuerNationalId,
