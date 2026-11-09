@@ -1,14 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { OnOutboxMessage, type OutboxHandlerContext } from '@nestjs/outbox';
-// import { Prisma } from '@prisma/client/extension';
-import { TokenService } from '../../common/crypto/token.service.js';
-import { InviteStatus } from '../../generated/prisma/enums.js';
-import { PrismaService } from '../../prisma/prisma.service.js';
-import { MailService } from '../../mail/mail.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
-import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
+import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { EmployeeService } from '../../employee/employee.service.js';
 import { InvitationService } from '../invitation.service.js';
 
 type InvitePayload = { employeeId: string; email: string; issuerNationalId: string };

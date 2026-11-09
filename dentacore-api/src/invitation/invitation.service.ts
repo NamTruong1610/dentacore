@@ -68,6 +68,7 @@ export class InvitationService {
     await this.mailService.sendInvite(msg.email, this.acceptUrl(rawToken));
   }
 
+  // When the user opens the invite link in the email, this function runs first to check if the invte token is valid (not consumed/expired/deleted/revoked or had a user marked INVITED that references it)
   async validateInviteToken(inviteTokenDto: InviteTokenValidityDto) {
     const inviteTokenHash = this.tokenService.digest(inviteTokenDto.inviteToken)
     const inviteTokenRecord = await this.inviteTokenRepo.findActiveInviteToken(inviteTokenHash)
@@ -92,7 +93,10 @@ export class InvitationService {
     }
     const passwordHash = await this.passwordHasher.hash(passwordSetupDto.rawPassword)
 
-    
+    const encryptedSecret = this.tokenService.generateMfaSecret()
+
+    // At submission, create a pending mfa setup in Redis auth instance: { passwordHash, tokenHash, excryptedSecret } keyed by tokenHash for idempotency, and returns the uri (otpauth://...). 
+    // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret 
 
   }
 

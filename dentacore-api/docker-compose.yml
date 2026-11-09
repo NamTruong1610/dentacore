@@ -15,13 +15,33 @@ services:
       timeout: 5s
       retries: 10
 
-  redis:
+  redis-auth:
     image: redis:latest
-    command: ["redis-server", "--appendonly", "yes"] # persist data to the volume
+    command:
+      - redis-server
+      - --appendonly yes            # persist sessions/activation tokens
+      - --appendfsync everysec
+      - --maxmemory-policy noeviction  # never drop a session; writes fail loudly instead
     ports:
-      - "${REDIS_PORT}:6379"
+      - "${REDIS_AUTH_PORT}:6379"
     volumes:
-      - redis-data:/data
+      - redis-auth-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis-cache:
+    image: redis:latest
+    command:
+      - redis-server
+      - --save ""                   # no RDB snapshots
+      - --appendonly no             # no AOF: cache is disposable
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru # evict least-recently-used keys when full
+    ports:
+      - "${REDIS_CACHE_PORT}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -64,6 +84,6 @@ services:
  
 volumes:
   postgres-data:
-  redis-data:
+  redis-auth-data:
   rabbitmq-data:
   mailpit-data:
