@@ -15,4 +15,16 @@ export class EmployeeService {
   async createUninvitedEmployee(createEmployeeDto: CreateEmployeeDto) {
     await this.employeeRepo.createUninvitedEmployee(createEmployeeDto);
   }
+
+  async findUninvitedByEmail(email: string) {
+    return await this.employeeRepo.findUninvitedByEmail(email)
+  }
+
+  async findInvitable(id: string) {
+    return await this.employeeRepo.findInvitable(id)
+  }
+
+  async markInvited(id: string) {
+    return await this.employeeRepo.markInvited(id)
+  }
 }

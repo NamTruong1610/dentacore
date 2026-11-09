@@ -6,9 +6,10 @@ import { MailModule } from '../mail/mail.module.js';
 import { CryptoModule } from '../common/crypto/crypto.module.js';
 import { InviteTokenRepository } from './invite-token.repository.js';
 import { InviteEmailHandler } from './handlers/invite-email.handler.js';
+import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
-  imports: [EmployeeModule, MailModule, CryptoModule],
+  imports: [EmployeeModule, MailModule, CryptoModule, AuthModule],
   providers: [InvitationService, InviteTokenRepository, InviteEmailHandler],
   controllers: [InvitationController]
 })
