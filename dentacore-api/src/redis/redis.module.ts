@@ -1,18 +1,18 @@
 import { Global, Inject, Logger, Module, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
-import { REDIS_SESSION } from './redis.constants.js';
+import { REDIS_AUTH } from './redis.constants.js';
 
 @Global()
 @Module({
   providers: [
     {
-      provide: REDIS_SESSION,
+      provide: REDIS_AUTH,
       inject: [ConfigService],
       useFactory: (config: ConfigService): Redis => {
         const logger = new Logger('RedisSession');
 
-        const client = new Redis(config.getOrThrow<string>('REDIS_SESSION_URL'), {
+        const client = new Redis(config.getOrThrow<string>('REDIS_AUTH_URL'), {
           // Batches concurrent commands from many requests into one round trip.
           enableAutoPipelining: true,
           // Fail a command after 3 reconnect attempts instead of hanging the request.
@@ -27,10 +27,10 @@ import { REDIS_SESSION } from './redis.constants.js';
       },
     },
   ],
-  exports: [REDIS_SESSION],
+  exports: [REDIS_AUTH],
 })
 export class RedisModule implements OnApplicationShutdown {
-  constructor(@Inject(REDIS_SESSION) private readonly client: Redis) {}
+  constructor(@Inject(REDIS_AUTH) private readonly client: Redis) {}
 
   // quit() lets in-flight commands finish; disconnect() would drop them.
   // Runs on SIGTERM only if main.ts calls app.enableShutdownHooks().
