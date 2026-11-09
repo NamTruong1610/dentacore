@@ -4,17 +4,17 @@ import { Transform } from 'class-transformer';
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value.toLowerCase())
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value?.trim()))
   firstName: string
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value?.trim().toLowerCase()))
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value?.trim()))
   middleName?: string | null;
 
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value.toLowerCase())
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value?.trim()))
   lastName: string
 
   @IsOptional()
@@ -26,10 +26,6 @@ export class CreateUserDto {
   @IsNotEmpty()
   @Transform(({ value }) => value.toLowerCase())
   primaryEmail: string
-
-  @IsString()
-  @IsNotEmpty()
-  rawPassword: string
 
   @IsString()
   @IsNotEmpty()

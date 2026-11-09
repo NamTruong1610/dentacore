@@ -11,25 +11,38 @@ import { fromPrisma, PostgresOutboxStore } from '@nestjs/outbox/postgres';
 import { OutboxAdminModule } from './outbox-admin/outbox-admin.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { ConfigModule } from '@nestjs/config';
+import { ClsModule } from 'nestjs-cls';
+import { ClsPluginTransactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { ApiKeyMiddleware } from './common/middleware/api-key.middleware.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    EmployeeModule, 
-    InvitationModule, 
-    PrismaModule, 
+    EmployeeModule,
+    InvitationModule,
+    PrismaModule,
     CryptoModule,
     OutboxModule.forRoot({
       relay: { pollInterval: '1s' },
       retry: { attempts: 10, backoff: { delay: '1s', maxDelay: '1m' } },
+    }),
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+      plugins: [
+        new ClsPluginTransactional({
+          imports: [PrismaModule],
+          adapter: new TransactionalAdapterPrisma({ prismaInjectionToken: PrismaService }),
+        }),
+      ],
     }),
     OutboxAdminModule,
     MailModule,
   ],
   controllers: [AppController],
   providers: [
-    AppService, 
+    AppService,
     {
       provide: PostgresOutboxStore,
       inject: [PrismaService, OutboxStorage],
