@@ -5,6 +5,7 @@ import { MfaService } from './mfa/mfa.service.js';
 
 @Module({
   providers: [AuthService, MfaService],
-  controllers: [AuthController]
+  controllers: [AuthController],
+  exports: [MfaService]
 })
 export class AuthModule {}
