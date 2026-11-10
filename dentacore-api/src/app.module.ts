@@ -52,7 +52,7 @@ import { validateEnv } from './config/env.validation.js';
       useFactory: (config: ConfigService) => ({
         stores: [createKeyv(config.getOrThrow<string>('REDIS_CACHE_URL'))],
       }),
-    }),
+    })
   ],
   controllers: [AppController],
   providers: [

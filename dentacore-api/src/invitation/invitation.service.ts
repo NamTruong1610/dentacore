@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, GoneException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 import { Outbox } from '@nestjs/outbox';
 import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
@@ -12,6 +12,13 @@ import { InviteTokenRepository } from './invite-token.repository.js';
 import { MailService } from '../mail/mail.service.js';
 import { MfaService } from '../auth/mfa/mfa.service.js';
 import { EmployeeService } from '../employee/employee.service.js';
+import { SecretCipherService } from '../common/crypto/secret-cipher.service.js';
+import { REDIS_AUTH } from '../redis/redis.constants.js';
+import { Redis } from 'ioredis';
+import { RedisKeys, RedisTtl } from '../auth/stores/auth-redis.keys.js';
+import { TOTPVerificationDto } from './dto/totp-verification.dto.js';
+import { MfaCredentialsService } from '../mfa-credentials/mfa-credentials.service.js';
+import { SaveMfaDto } from '../mfa-credentials/dto/save-invite-mfa.dto.js';
 
 type InvitePayload = { employeeId: string; email: string; issuerNationalId: string };
 
@@ -25,6 +32,9 @@ export class InvitationService {
     private readonly mailService: MailService,
     private readonly employeeService: EmployeeService,
     private readonly inviteTokenRepo: InviteTokenRepository,
+    private readonly mfaCredentialService: MfaCredentialsService,
+    private readonly secretCipher: SecretCipherService,
+    @Inject(REDIS_AUTH) private readonly redis: Redis,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma>
   ) { }
 
@@ -67,7 +77,7 @@ export class InvitationService {
     const employee = await this.employeeService.findInvitable(msg.employeeId);
     if (!employee) return;
     const rawToken = this.tokenService.generate();
-    await this.inviteTokenRepo.createInviteToken(employee.id, this.tokenService.digest(rawToken), new Date(Date.now() + this.INVITE_DURATION), msg.issuerNationalId);
+    await this.inviteTokenRepo.createInviteToken(employee.id, msg.email, this.tokenService.digest(rawToken), new Date(Date.now() + this.INVITE_DURATION), msg.issuerNationalId);
     await this.mailService.sendInvite(msg.email, this.acceptUrl(rawToken));
   }
 
@@ -96,10 +106,74 @@ export class InvitationService {
     }
     const passwordHash = await this.passwordHasher.hash(invitePasswordSetupDto.rawPassword)
 
-    const encryptedSecret = this.mfaService.generateMfaSecret()
+    const rawSecret = this.mfaService.generateMfaSecret()
+    const encryptedSecret = this.secretCipher.encrypt(rawSecret, inviteTokenRecord.employeeId);
 
-    // At submission, create a pending mfa setup in Redis auth instance: { passwordHash, tokenHash, excryptedSecret } keyed by tokenHash for idempotency, and returns the uri (otpauth://...). 
-    // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret 
+    // At submission, create a pending mfa setup in Redis auth instance: { passwordHash, employeeId, excryptedSecret } keyed by tokenHash for idempotency, and returns the uri (otpauth://...). 
+    // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret. 
+    // We pass the employee's email for the 'label' parameter in generateUri(), the email is taken from sentToEmail field in InviteToken schema
+    const remaining = Math.floor((inviteTokenRecord.expiresAt.getTime() - Date.now()) / 1000);
+    const remainingTtl = Math.min(RedisTtl.activation, remaining)
+
+    if (remainingTtl <= 0) throw new BadRequestException('Invite token invalid or expired');
+
+    await this.redis.set(
+      RedisKeys.activation(inviteTokenHash),
+      JSON.stringify({ passwordHash, encryptedSecret, employeeId: inviteTokenRecord.employeeId }),
+      "EX",
+      remainingTtl // Which ever runs out first, the token's remaining time or the invite challenge (15 mins)
+    )
+
+    const otpUri = this.mfaService.generateUri('Dentacore', inviteTokenRecord.sentToEmail, rawSecret)
+
+    return { otpauthUri: otpUri };
+  }
+
+  async verifyTotp(totpDto: TOTPVerificationDto) {
+    const inviteTokenHash = this.tokenService.digest(totpDto.inviteToken)
+    const inviteTokenRecord = await this.inviteTokenRepo.findActiveInviteToken(inviteTokenHash)
+
+    if (!inviteTokenRecord) {
+      throw new BadRequestException('Invite token invalid or expired')
+    }
+
+    const rawPayload = await this.redis.get(RedisKeys.activation(inviteTokenHash))
+
+    if (!rawPayload) {
+      throw new BadRequestException('MFA challenge expired');
+    }
+
+    const { passwordHash, encryptedSecret, employeeId } = JSON.parse(rawPayload)
+
+    if (employeeId !== inviteTokenRecord.employeeId) {
+      throw new BadRequestException('Id(s) not matched');
+    }
+
+    const rawMfaSecret = this.secretCipher.decrypt(encryptedSecret, employeeId)
+
+    const isValid = await this.mfaService.verifyTotpToken(rawMfaSecret, totpDto.totp)
+
+    if (!isValid) {
+      throw new BadRequestException('OTP invalid or expired');
+    }
+
+    await this.txHost.withTransaction(async () => {
+      // Consume invite token
+      const isMatched = await this.inviteTokenRepo.consumeInviteTokenByHash(inviteTokenHash)
+      if (!isMatched) throw new ConflictException('Token invalid or expired'); 
+
+      // Save mfa credentials
+      await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret)
+
+      // Save password hash and switch to active
+      const isSaved = await this.employeeService.activateWithPasswordHash(employeeId, passwordHash)
+      if (!isSaved) {
+        throw new ConflictException();
+      }
+    })
+
+    // Delete pending payload from Redis. No outbox the because the invite token is consumed, subsequent access to the invite link will be declined and the Redis payload can time out on its own
+    await this.redis.del(RedisKeys.activation(inviteTokenHash));
 
   }
 

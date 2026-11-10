@@ -5,6 +5,7 @@ model InviteToken {
   consumedAt       DateTime?
   revokedAt        DateTime?
   employeeId       String?
+  sentToEmail      String
   employee         Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   issuerNationalId String
 

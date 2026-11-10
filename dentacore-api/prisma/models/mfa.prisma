@@ -1,4 +1,10 @@
 model MfaCredentials {
-  id     String @id @default(uuid())
-  secret String
+  id              String   @id @default(uuid())
+  encryptedSecret String
+  employeeId      String   @unique
+  employee        Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }

@@ -1,7 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { InviteStatus } from "../generated/prisma/enums.js";
+import { ActiveStatus, InviteStatus } from "../generated/prisma/enums.js";
 import { CreateEmployeeDto } from "./dto/create-employee.dto.js";
 import { Prisma } from "../generated/prisma/client.js";
 
@@ -11,7 +11,6 @@ export class EmployeeRepository {
   constructor(private readonly txHost: TransactionHost<TransactionalAdapterPrisma>) { }
 
   async createUninvitedEmployee(createEmployeeDto: CreateEmployeeDto) {
-
     try {
       return await this.txHost.tx.employee.create({
         data: {
@@ -43,6 +42,22 @@ export class EmployeeRepository {
     }
 
 
+  }
+
+  async savePasswordHash(id: string, passwordHash: string) {
+    const { count } = await this.txHost.tx.employee.updateMany({
+      where: { 
+        id, 
+        inviteStatus: InviteStatus.INVITED, 
+        activeStatus: ActiveStatus.INACTIVE,
+        deletedAt: null 
+      },
+      data: {
+        passwordHash,
+        activeStatus: ActiveStatus.ACTIVE,
+      }
+    })
+    return count === 1
   }
 
 
