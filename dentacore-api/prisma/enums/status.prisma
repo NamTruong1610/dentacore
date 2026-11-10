@@ -2,3 +2,8 @@ enum InviteStatus {
   INVITED
   UNINVITED
 }
+
+enum ActiveStatus {
+  INACTIVE
+  ACTIVE
+}

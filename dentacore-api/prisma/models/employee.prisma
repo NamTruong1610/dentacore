@@ -8,6 +8,7 @@ model Employee {
   lastName       String
   primaryEmail   String
   inviteStatus   InviteStatus    @default(UNINVITED)
+  activeStatus   ActiveStatus    @default(INACTIVE)
   addresses      Address[]
   mfaCredentials MfaCredentials?
   phones         Phone[]

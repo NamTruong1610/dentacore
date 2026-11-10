@@ -165,8 +165,11 @@ export class InvitationService {
       // Save mfa credentials
       await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret)
 
-      // Save password hash
-      await this.employeeService.savePasswordHash(employeeId, passwordHash)
+      // Save password hash and switch to active
+      const isSaved = await this.employeeService.savePasswordHash(employeeId, passwordHash)
+      if (!isSaved) {
+        throw new ConflictException();
+      }
     })
 
     // Delete pending payload from Redis. No outbox the because the invite token is consumed, subsequent access to the invite link will be declined and the Redis payload can time out on its own
