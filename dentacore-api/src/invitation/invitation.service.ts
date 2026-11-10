@@ -166,7 +166,7 @@ export class InvitationService {
       await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret)
 
       // Save password hash and switch to active
-      const isSaved = await this.employeeService.savePasswordHash(employeeId, passwordHash)
+      const isSaved = await this.employeeService.activateWithPasswordHash(employeeId, passwordHash)
       if (!isSaved) {
         throw new ConflictException();
       }

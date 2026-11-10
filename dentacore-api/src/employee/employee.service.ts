@@ -28,7 +28,7 @@ export class EmployeeService {
     return await this.employeeRepo.markInvited(id)
   }
 
-  async savePasswordHash(id: string, passwordHash: string) {
+  async activateWithPasswordHash(id: string, passwordHash: string) {
     return await this.employeeRepo.savePasswordHash(id, passwordHash)
   }
 }

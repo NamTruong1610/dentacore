@@ -6,4 +6,5 @@ enum InviteStatus {
 enum ActiveStatus {
   INACTIVE
   ACTIVE
+  DEACTIVATED
 }
