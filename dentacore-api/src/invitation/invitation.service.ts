@@ -169,7 +169,7 @@ export class InvitationService {
       await this.employeeService.savePasswordHash(employeeId, passwordHash)
     })
 
-    // Delete pending payload from Redis
+    // Delete pending payload from Redis. No outbox the because the invite token is consumed, subsequent access to the invite link will be declined and the Redis payload can time out on its own
     await this.redis.del(RedisKeys.activation(inviteTokenHash));
 
   }
