@@ -16,6 +16,9 @@ import { SecretCipherService } from '../common/crypto/secret-cipher.service.js';
 import { REDIS_AUTH } from '../redis/redis.constants.js';
 import { Redis } from 'ioredis';
 import { RedisKeys, RedisTtl } from '../auth/stores/auth-redis.keys.js';
+import { TOTPVerificationDto } from './dto/totp-verification.dto.js';
+import { MfaCredentialsService } from '../mfa-credentials/mfa-credentials.service.js';
+import { SaveMfaDto } from '../mfa-credentials/dto/save-invite-mfa.dto.js';
 
 type InvitePayload = { employeeId: string; email: string; issuerNationalId: string };
 
@@ -29,6 +32,7 @@ export class InvitationService {
     private readonly mailService: MailService,
     private readonly employeeService: EmployeeService,
     private readonly inviteTokenRepo: InviteTokenRepository,
+    private readonly mfaCredentialService: MfaCredentialsService,
     private readonly secretCipher: SecretCipherService,
     @Inject(REDIS_AUTH) private readonly redis: Redis,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma>
@@ -105,8 +109,6 @@ export class InvitationService {
     const rawSecret = this.mfaService.generateMfaSecret()
     const encryptedSecret = this.secretCipher.encrypt(rawSecret, inviteTokenRecord.employeeId);
 
-
-
     // At submission, create a pending mfa setup in Redis auth instance: { passwordHash, employeeId, excryptedSecret } keyed by tokenHash for idempotency, and returns the uri (otpauth://...). 
     // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret. 
     // We pass the employee's email for the 'label' parameter in generateUri(), the email is taken from sentToEmail field in InviteToken schema
@@ -127,6 +129,49 @@ export class InvitationService {
     return { otpauthUri: otpUri };
   }
 
-  
+  async verifyTotp(totpDto: TOTPVerificationDto) {
+    const inviteTokenHash = this.tokenService.digest(totpDto.inviteToken)
+    const inviteTokenRecord = await this.inviteTokenRepo.findActiveInviteToken(inviteTokenHash)
+
+    if (!inviteTokenRecord) {
+      throw new BadRequestException('Invite token invalid or expired')
+    }
+
+    const rawPayload = await this.redis.get(RedisKeys.activation(inviteTokenHash))
+
+    if (!rawPayload) {
+      throw new BadRequestException('MFA challenge expired');
+    }
+
+    const { passwordHash, encryptedSecret, employeeId } = JSON.parse(rawPayload)
+
+    if (employeeId !== inviteTokenRecord.employeeId) {
+      throw new BadRequestException('Id(s) not matched');
+    }
+
+    const rawMfaSecret = this.secretCipher.decrypt(encryptedSecret, employeeId)
+
+    const isValid = await this.mfaService.verifyTotpToken(rawMfaSecret, totpDto.totp)
+
+    if (!isValid) {
+      throw new BadRequestException('OTP invalid or expired');
+    }
+
+    await this.txHost.withTransaction(async () => {
+      // Consume invite token
+      const isMatched = await this.inviteTokenRepo.consumeInviteTokenByHash(inviteTokenHash)
+      if (!isMatched) throw new ConflictException('Token invalid or expired'); 
+
+      // Save mfa credentials
+      await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret)
+
+      // Save password hash
+      await this.employeeService.savePasswordHash(employeeId, passwordHash)
+    })
+
+    // Delete pending payload from Redis
+    await this.redis.del(RedisKeys.activation(inviteTokenHash));
+
+  }
 
 }

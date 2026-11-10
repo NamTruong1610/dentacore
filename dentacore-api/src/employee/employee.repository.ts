@@ -11,7 +11,6 @@ export class EmployeeRepository {
   constructor(private readonly txHost: TransactionHost<TransactionalAdapterPrisma>) { }
 
   async createUninvitedEmployee(createEmployeeDto: CreateEmployeeDto) {
-
     try {
       return await this.txHost.tx.employee.create({
         data: {
@@ -43,6 +42,15 @@ export class EmployeeRepository {
     }
 
 
+  }
+
+  async savePasswordHash(id: string, passwordHash: string) {
+    return await this.txHost.tx.employee.update({
+      where: { id, inviteStatus: InviteStatus.INVITED },
+      data: {
+        passwordHash
+      }
+    })
   }
 
 

@@ -1,14 +1,15 @@
 model Employee {
-  id             String        @id @default(uuid())
-  nationalId     String        
-  employeeNumber String?       @unique
+  id             String          @id @default(uuid())
+  nationalId     String
+  employeeNumber String?         @unique
   passwordHash   String?
   firstName      String
   middleName     String?
   lastName       String
   primaryEmail   String
-  inviteStatus   InviteStatus  @default(UNINVITED)
+  inviteStatus   InviteStatus    @default(UNINVITED)
   addresses      Address[]
+  mfaCredentials MfaCredentials?
   phones         Phone[]
   emails         Email[]
   roles          Role[]

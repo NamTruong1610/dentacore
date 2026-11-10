@@ -6,6 +6,7 @@ import { InviteStatus } from "../generated/prisma/enums.js";
 @Injectable()
 export class InviteTokenRepository {
   constructor(private readonly txHost: TransactionHost<TransactionalAdapterPrisma>) { }
+
   findActiveInviteToken(tokenHash: string) {
     return this.txHost.tx.inviteToken.findFirst({
       where: {
@@ -30,4 +31,15 @@ export class InviteTokenRepository {
       },
     })
   }
+
+  consumeInviteTokenByHash(tokenHash: string) {
+    const { count } = this.txHost.tx.inviteToken.updateMany({
+      where: { tokenHash, consumedAt: null },
+      data: {
+        consumedAt: new Date()
+      }
+    })
+    return count === 1
+  }
+
 }

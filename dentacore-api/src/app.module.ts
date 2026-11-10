@@ -20,6 +20,7 @@ import { RedisModule } from './redis/redis.module.js';
 import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { validateEnv } from './config/env.validation.js';
+import { MfaCredentialsModule } from './mfa-credentials/mfa-credentials.module.js';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { validateEnv } from './config/env.validation.js';
         stores: [createKeyv(config.getOrThrow<string>('REDIS_CACHE_URL'))],
       }),
     }),
+    MfaCredentialsModule,
   ],
   controllers: [AppController],
   providers: [
