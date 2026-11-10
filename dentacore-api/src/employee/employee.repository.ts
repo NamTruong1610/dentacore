@@ -46,10 +46,15 @@ export class EmployeeRepository {
 
   async savePasswordHash(id: string, passwordHash: string) {
     const { count } = await this.txHost.tx.employee.updateMany({
-      where: { id, inviteStatus: InviteStatus.INVITED, activeStatus: ActiveStatus.INACTIVE },
+      where: { 
+        id, 
+        inviteStatus: InviteStatus.INVITED, 
+        activeStatus: ActiveStatus.INACTIVE,
+        deletedAt: null 
+      },
       data: {
         passwordHash,
-        activeStatus: ActiveStatus.ACTIVE
+        activeStatus: ActiveStatus.ACTIVE,
       }
     })
     return count === 1
