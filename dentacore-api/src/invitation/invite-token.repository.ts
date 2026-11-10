@@ -32,8 +32,8 @@ export class InviteTokenRepository {
     })
   }
 
-  consumeInviteTokenByHash(tokenHash: string) {
-    const { count } = this.txHost.tx.inviteToken.updateMany({
+  async consumeInviteTokenByHash(tokenHash: string) {
+    const { count } = await this.txHost.tx.inviteToken.updateMany({
       where: { tokenHash, consumedAt: null },
       data: {
         consumedAt: new Date()

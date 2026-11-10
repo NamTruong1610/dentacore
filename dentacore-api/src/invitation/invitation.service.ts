@@ -124,7 +124,7 @@ export class InvitationService {
       remainingTtl // Which ever runs out first, the token's remaining time or the invite challenge (15 mins)
     )
 
-    const otpUri = this.mfaService.generateUri(process.env.DOMAIN_NAME as string, inviteTokenRecord.sentToEmail, rawSecret)
+    const otpUri = this.mfaService.generateUri('Dentacore', inviteTokenRecord.sentToEmail, rawSecret)
 
     return { otpauthUri: otpUri };
   }

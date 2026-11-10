@@ -53,8 +53,7 @@ import { MfaCredentialsModule } from './mfa-credentials/mfa-credentials.module.j
       useFactory: (config: ConfigService) => ({
         stores: [createKeyv(config.getOrThrow<string>('REDIS_CACHE_URL'))],
       }),
-    }),
-    MfaCredentialsModule,
+    })
   ],
   controllers: [AppController],
   providers: [
