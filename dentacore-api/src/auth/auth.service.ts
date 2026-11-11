@@ -8,6 +8,7 @@ import { RedisKeys, RedisTtl } from './stores/auth-redis.keys.js';
 import { TokenService } from '../common/crypto/token.service.js';
 import { EmployeeService } from '../employee/employee.service.js';
 import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
+import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 
 @Injectable()
 export class AuthService {
@@ -57,7 +58,7 @@ export class AuthService {
           absoluteExpiresAt
         }),
         'EX',
-        RedisTtl.sessionIdle
+        sessionIdle
       )
       .sadd(
         RedisKeys.userSessions(employeeRecord.id),
@@ -65,11 +66,11 @@ export class AuthService {
       )
       .expire(
         RedisKeys.userSessions(employeeRecord.id),
-        RedisTtl.sessionAbsolute, 'NX'
+        sessionAbsolute, 'NX'
       ) // new set: give it a TTL
       .expire(
         RedisKeys.userSessions(employeeRecord.id),
-        RedisTtl.sessionAbsolute, 'GT'
+        sessionAbsolute, 'GT'
       )
       .exec()
 
@@ -99,6 +100,10 @@ export class AuthService {
     }
     
     return { sessionIdRaw, rememberMe: loginPasswordDto.remember }
+  }
+
+  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+    
   }
 }
 
