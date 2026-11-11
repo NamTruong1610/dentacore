@@ -54,6 +54,8 @@ export class AuthService {
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+    // Delete leftover challenges
+    this.redis.del(RedisKeys.mfaChallenge('*'))
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
     const rawMfaPayload = await this.redis.get(RedisKeys.mfaChallenge(mfaChallengeIdHash))
