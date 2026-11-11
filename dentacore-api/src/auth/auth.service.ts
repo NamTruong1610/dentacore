@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { LoginPasswordDto } from './dto/login-password.dto.js';
 import { Redis } from 'ioredis';
 import { REDIS_AUTH } from '../redis/redis.constants.js';
@@ -25,75 +25,54 @@ export class AuthService {
 
     const employeeRecord = await this.employeeService.findActiveByEmployeeNo(loginPasswordDto.employeeNumber)
 
+    if (!employeeRecord) {
+      throw new NotFoundException('Employee not found')
+    }
+
     const passwordMatched = await this.passwordHasher.compare(loginPasswordDto.password, employeeRecord.passwordHash)
 
     if (!passwordMatched) {
-      throw new BadRequestException('Invalid employee number or password')
+      throw new UnauthorizedException('Invalid employee number or password')
     }
 
-    // "Remember me" switched off
-    if (!loginPasswordDto.remember) {
-      await this.redis
-        .multi()
-        .set(
-          RedisKeys.session(sessionIdHash),
-          JSON.stringify({
-            id: employeeRecord.id,
-            roles: employeeRecord.roles,
-            userAgent: '',
-            ip: '',
-            absoluteExpiresAt: Date.now() + RedisTtl.sessionAbsolute
-          }),
-          'EX',
-          RedisTtl.sessionIdle
-        )
-        .sadd(
-          RedisKeys.userSessions(employeeRecord.id),
-          sessionIdHash,
-        )
-        .expire(
-          RedisKeys.userSessions(employeeRecord.id), 
-          RedisTtl.sessionAbsolute, 'NX'
-        ) // new set: give it a TTL
-        .expire(
-          RedisKeys.userSessions(employeeRecord.id), 
-          RedisTtl.sessionAbsolute, 'GT'
-        )
-        .exec()
+    let absoluteExpiresAt: number = Date.now() + RedisTtl.sessionAbsolute * 1000
+    let sessionIdle: number = RedisTtl.sessionIdle
+    let sessionAbsolute: number = RedisTtl.sessionAbsolute
 
+    if (loginPasswordDto.remember) {
+      absoluteExpiresAt = Date.now() + RedisTtl.sessionRememberMeAbsolute * 1000
+      sessionIdle = RedisTtl.sessionIdleRememberMe
+      sessionAbsolute = RedisTtl.sessionRememberMeAbsolute
     }
 
-    else {
-      await this.redis
-        .multi()
-        .set(
-          RedisKeys.session(sessionIdHash),
-          JSON.stringify({
-            id: employeeRecord.id,
-            roles: employeeRecord.roles,
-            userAgent: '',
-            ip: '',
-            absoluteExpiresAt: Date.now() + RedisTtl.sessionRememberMeAbsolute
-          }),
-          'EX',
-          RedisTtl.sessionIdleRememberMe
-        )
-        .sadd(
-          RedisKeys.userSessions(employeeRecord.id),
-          sessionIdHash
-        )
-        .expire(
-          RedisKeys.userSessions(employeeRecord.id), 
-          RedisTtl.sessionRememberMeAbsolute, 'NX'
-        ) // new set: give it a TTL
-        .expire(
-          RedisKeys.userSessions(employeeRecord.id), 
-          RedisTtl.sessionRememberMeAbsolute, 'GT'
-        )
-        .exec()
-    }
+    await this.redis
+      .multi()
+      .set(
+        RedisKeys.session(sessionIdHash),
+        JSON.stringify({
+          id: employeeRecord.id,
+          roles: employeeRecord.roles,
+          userAgent: '',
+          ip: '',
+          absoluteExpiresAt: absoluteExpiresAt
+        }),
+        'EX',
+        RedisTtl.sessionIdle
+      )
+      .sadd(
+        RedisKeys.userSessions(employeeRecord.id),
+        sessionIdHash,
+      )
+      .expire(
+        RedisKeys.userSessions(employeeRecord.id),
+        RedisTtl.sessionAbsolute, 'NX'
+      ) // new set: give it a TTL
+      .expire(
+        RedisKeys.userSessions(employeeRecord.id),
+        RedisTtl.sessionAbsolute, 'GT'
+      )
+      .exec()
 
     return { sessionIdRaw, rememberMe: loginPasswordDto.remember }
-
   }
 }
