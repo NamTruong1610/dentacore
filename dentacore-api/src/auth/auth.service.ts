@@ -73,7 +73,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    const mfaSecretRaw = this.secretCipher.decrypt(employeeRecord.mfaCredentials.encryptedSecret, employeeId)
+    const encryptedSecret = employeeRecord.mfaCredentials.encryptedSecret
+    if (!encryptedSecret) throw new UnauthorizedException('Invalid credentials')
+    const mfaSecretRaw = this.secretCipher.decrypt(encryptedSecret, employeeId)
 
     const isValidOtp = await this.mfaService.verifyTotpToken(mfaSecretRaw, verifyOtpDto.otp)
 
