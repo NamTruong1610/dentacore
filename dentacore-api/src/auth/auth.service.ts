@@ -55,7 +55,6 @@ export class AuthService {
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     // Delete leftover challenges
-    this.redis.del(RedisKeys.mfaChallenge('*'))
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
     const rawMfaPayload = await this.redis.get(RedisKeys.mfaChallenge(mfaChallengeIdHash))
@@ -81,6 +80,11 @@ export class AuthService {
 
     if (!isValidOtp) {
       throw new UnauthorizedException('Invalid credentials')
+    }
+
+    const claimed = await this.redis.del(RedisKeys.mfaChallenge(mfaChallengeIdHash));
+    if (claimed !== 1) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Create new session
@@ -121,7 +125,6 @@ export class AuthService {
         RedisKeys.userSessions(employeeRecord.id),
         sessionAbsolute, 'GT'
       )
-      .del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
       .exec()
 
     const sessionIdHashes = await this.redis.smembers(RedisKeys.userSessions(employeeRecord.id))
