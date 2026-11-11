@@ -54,7 +54,6 @@ export class AuthService {
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
-    // Delete leftover challenges
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
     const rawMfaPayload = await this.redis.get(RedisKeys.mfaChallenge(mfaChallengeIdHash))
@@ -71,7 +70,7 @@ export class AuthService {
     const employeeRecord = await this.employeeService.findActiveByEmployeeId(employeeId)
 
     if (!employeeRecord) {
-      throw new NotFoundException()
+      throw new UnauthorizedException('Invalid credentials')
     }
 
     const mfaSecretRaw = this.secretCipher.decrypt(employeeRecord.mfaCredentials.encryptedSecret, employeeId)
