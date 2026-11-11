@@ -24,6 +24,10 @@ export class EmployeeService {
     return await this.employeeRepo.findInvitable(id)
   }
 
+  async findActiveByEmployeeNo(employeeNo: string) {
+    return await this.employeeRepo.findActiveEmployeeByEmployeeNumber(employeeNo)
+  }
+
   async markInvited(id: string) {
     return await this.employeeRepo.markInvited(id)
   }

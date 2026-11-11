@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsNotEmpty, IsOptional } from "class-validator"
+import { IsEmail, IsString, IsNotEmpty, IsOptional, Matches } from "class-validator"
 import { Transform } from 'class-transformer';
 
 export class CreateEmployeeDto {
@@ -17,9 +17,10 @@ export class CreateEmployeeDto {
   @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value?.trim()))
   lastName: string
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value?.trim().toLowerCase()))
+  @Matches(/^\d{8}$/)
   employeeNumber: string | null
 
   @IsEmail()

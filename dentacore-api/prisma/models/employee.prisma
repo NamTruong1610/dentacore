@@ -1,7 +1,7 @@
 model Employee {
   id             String          @id @default(uuid())
   nationalId     String
-  employeeNumber String?         @unique
+  employeeNumber String          @unique
   passwordHash   String?
   firstName      String
   middleName     String?

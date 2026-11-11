@@ -83,6 +83,21 @@ export class EmployeeRepository {
     });
   }
 
+  async findActiveEmployeeByEmployeeNumber(employeeNo: string) {
+    return await this.txHost.tx.employee.findFirst({
+      select: {
+        id: true,
+        roles: true,
+      },
+      where: {
+        employeeNo,
+        deletedAt: null,
+        inviteStatus: InviteStatus.INVITED,
+        activeStatus: ActiveStatus.ACTIVE
+      }
+    })
+  }
+
   async markInvited(id: string) {
     const { count } = await this.txHost.tx.employee.updateMany({
       where: { id, inviteStatus: InviteStatus.UNINVITED, deletedAt: null },

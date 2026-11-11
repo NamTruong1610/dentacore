@@ -6,7 +6,7 @@ import { InviteTokenValidityDto } from './dto/invite-token-validity.dto.js';
 import { TokenService } from '../common/crypto/token.service.js';
 import { InvitePasswordSetupDto } from './dto/invite-password-setup.dto.js';
 
-import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
+import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { InviteTokenRepository } from './invite-token.repository.js';
 import { MailService } from '../mail/mail.service.js';
@@ -20,7 +20,7 @@ import { TOTPVerificationDto } from './dto/totp-verification.dto.js';
 import { MfaCredentialsService } from '../mfa-credentials/mfa-credentials.service.js';
 import { SaveMfaDto } from '../mfa-credentials/dto/save-invite-mfa.dto.js';
 
-type InvitePayload = { employeeId: string; email: string; issuerNationalId: string };
+type InvitePayload = { employeeId: string; email: string; issuerNationalId: string, employeeNo: string };
 
 @Injectable()
 export class InvitationService {
@@ -64,7 +64,12 @@ export class InvitationService {
         await this.outbox.add(this.txHost.tx, {
           topic: 'employee.invited',
           key: employee.id,
-          payload: { employeeId: employee.id, email, issuerNationalId: 'request-user-id-placeholder' },
+          payload: { 
+            employeeId: employee.id, 
+            email, 
+            employeeNumber: employee.employeeNumber,
+            issuerNationalId: 'request-user-id-placeholder' 
+          },
         });
       }
     )
@@ -76,9 +81,10 @@ export class InvitationService {
     // findInvitable is a guard that closes such window
     const employee = await this.employeeService.findInvitable(msg.employeeId);
     if (!employee) return;
+    if (employee.employeeNumber !== msg.employeeNo) return;
     const rawToken = this.tokenService.generate();
     await this.inviteTokenRepo.createInviteToken(employee.id, msg.email, this.tokenService.digest(rawToken), new Date(Date.now() + this.INVITE_DURATION), msg.issuerNationalId);
-    await this.mailService.sendInvite(msg.email, this.acceptUrl(rawToken));
+    await this.mailService.sendInvite(msg.email, this.acceptUrl(rawToken), employee.employeeNumber);
   }
 
   // When the user opens the invite link in the email, this function runs first to check if the invte token is valid (not consumed/expired/deleted/revoked or had a user marked INVITED that references it)
