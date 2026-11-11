@@ -13,5 +13,5 @@ export class LoginPasswordDto {
 
   @IsBoolean()
   @IsNotEmpty()
-  remember: boolean
+  rememberMe: boolean
 }

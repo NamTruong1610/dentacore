@@ -83,7 +83,7 @@ export class EmployeeRepository {
     });
   }
 
-  async findActiveEmployeeByEmployeeNumber(employeeNumber: string) {
+  async findActiveEmployeeByNumber(employeeNumber: string) {
     return await this.txHost.tx.employee.findFirst({
       select: {
         id: true,
@@ -92,6 +92,26 @@ export class EmployeeRepository {
       },
       where: {
         employeeNumber,
+        deletedAt: null,
+        inviteStatus: InviteStatus.INVITED,
+        activeStatus: ActiveStatus.ACTIVE
+      }
+    })
+  }
+
+  async findActiveEmployeeById(employeeId: string) {
+    return await this.txHost.tx.employee.findFirst({
+      select: {
+        id: true,
+        roles: true,
+        mfaCredentials: {
+          select: {
+            encryptedSecret: true
+          }
+        }
+      },
+      where: {
+        id: employeeId,
         deletedAt: null,
         inviteStatus: InviteStatus.INVITED,
         activeStatus: ActiveStatus.ACTIVE

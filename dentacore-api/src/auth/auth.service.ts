@@ -9,6 +9,8 @@ import { TokenService } from '../common/crypto/token.service.js';
 import { EmployeeService } from '../employee/employee.service.js';
 import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
+import { MfaService } from './mfa/mfa.service.js';
+import { SecretCipherService } from '../common/crypto/secret-cipher.service.js';
 
 @Injectable()
 export class AuthService {
@@ -17,12 +19,13 @@ export class AuthService {
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma>,
     private readonly tokenService: TokenService,
     private readonly employeeService: EmployeeService,
-    private readonly passwordHasher: PasswordHasher
+    private readonly passwordHasher: PasswordHasher,
+    private readonly mfaService: MfaService,
+    private readonly secretCipher: SecretCipherService
   ) { }
   async login(loginPasswordDto: LoginPasswordDto) {
-    // Create auth payload with redis {id, roles, userAgent, ip}
     const sessionIdRaw = this.tokenService.generate()
-    const sessionIdHash = this.tokenService.digest(sessionIdRaw)
+
 
     const employeeRecord = await this.employeeService.findActiveByEmployeeNo(loginPasswordDto.employeeNumber)
 
@@ -36,11 +39,57 @@ export class AuthService {
       throw new UnauthorizedException('Invalid employee number or password')
     }
 
+    // Create pending mfa challenge
+    const mfaChallengeIdRaw = this.tokenService.generate()
+    const mfaChallengeIdHash = this.tokenService.digest(mfaChallengeIdRaw)
+    this.redis.set(
+      RedisKeys.mfaChallenge(mfaChallengeIdHash),
+      JSON.stringify({
+        employeeId: employeeRecord.id,
+        sessionIdRaw,
+        rememberMe: loginPasswordDto.rememberMe
+      }),
+      'EX',
+      RedisTtl.mfaChallenge
+    )
+
+    return { mfaChallengeIdRaw }
+  }
+
+  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+    const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
+
+    const rawMfaPayload = await this.redis.get(RedisKeys.mfaChallenge(mfaChallengeIdHash))
+
+    if (!rawMfaPayload) {
+      throw new UnauthorizedException('Invalid credentials')
+    }
+
+    const { employeeId, rememberMe, sessionIdRaw } = JSON.parse(rawMfaPayload)
+
+    const sessionIdHash = this.tokenService.digest(sessionIdRaw)
+
+    const employeeRecord = await this.employeeService.findActiveByEmployeeId(employeeId)
+
+    if (!employeeRecord) {
+      throw new NotFoundException()
+    }
+
+    const mfaSecretRaw = this.secretCipher.decrypt(employeeRecord.mfaCredentials.encryptedSecret, employeeId)
+
+    const isValidOtp = await this.mfaService.verifyTotpToken(mfaSecretRaw, verifyOtpDto.otp)
+
+    if (!isValidOtp) {
+      throw new UnauthorizedException('Invalid credentials')
+    }
+
+    // Create new session
+
     let absoluteExpiresAt: number = Date.now() + RedisTtl.sessionAbsolute * 1000
     let sessionIdle: number = RedisTtl.sessionIdle
     let sessionAbsolute: number = RedisTtl.sessionAbsolute
 
-    if (loginPasswordDto.remember) {
+    if (rememberMe) {
       absoluteExpiresAt = Date.now() + RedisTtl.sessionRememberMeAbsolute * 1000
       sessionIdle = RedisTtl.sessionIdleRememberMe
       sessionAbsolute = RedisTtl.sessionRememberMeAbsolute
@@ -51,7 +100,7 @@ export class AuthService {
       .set(
         RedisKeys.session(sessionIdHash),
         JSON.stringify({
-          id: employeeRecord.id,
+          id: employeeId,
           roles: employeeRecord.roles,
           userAgent: '',
           ip: '',
@@ -98,12 +147,6 @@ export class AuthService {
     if (expiredSessionHashes.length > 0) {
       await this.redis.srem(RedisKeys.userSessions(employeeRecord.id), expiredSessionHashes)
     }
-    
-    return { sessionIdRaw, rememberMe: loginPasswordDto.remember }
-  }
-
-  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
-    
   }
 }
 
