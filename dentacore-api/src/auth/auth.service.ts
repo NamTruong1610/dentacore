@@ -24,13 +24,11 @@ export class AuthService {
     private readonly secretCipher: SecretCipherService
   ) { }
   async login(loginPasswordDto: LoginPasswordDto) {
-    const sessionIdRaw = this.tokenService.generate()
-
 
     const employeeRecord = await this.employeeService.findActiveByEmployeeNo(loginPasswordDto.employeeNumber)
 
     if (!employeeRecord) {
-      throw new NotFoundException('Employee not found')
+      throw new UnauthorizedException('Invalid employee number or password')
     }
 
     const passwordMatched = await this.passwordHasher.compare(loginPasswordDto.password, employeeRecord.passwordHash)
@@ -42,11 +40,10 @@ export class AuthService {
     // Create pending mfa challenge
     const mfaChallengeIdRaw = this.tokenService.generate()
     const mfaChallengeIdHash = this.tokenService.digest(mfaChallengeIdRaw)
-    this.redis.set(
+    await this.redis.set(
       RedisKeys.mfaChallenge(mfaChallengeIdHash),
       JSON.stringify({
         employeeId: employeeRecord.id,
-        sessionIdRaw,
         rememberMe: loginPasswordDto.rememberMe
       }),
       'EX',
@@ -65,8 +62,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    const { employeeId, rememberMe, sessionIdRaw } = JSON.parse(rawMfaPayload)
+    const { employeeId, rememberMe } = JSON.parse(rawMfaPayload)
 
+    const sessionIdRaw = this.tokenService.generate()
     const sessionIdHash = this.tokenService.digest(sessionIdRaw)
 
     const employeeRecord = await this.employeeService.findActiveByEmployeeId(employeeId)
@@ -121,6 +119,7 @@ export class AuthService {
         RedisKeys.userSessions(employeeRecord.id),
         sessionAbsolute, 'GT'
       )
+      .del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
       .exec()
 
     const sessionIdHashes = await this.redis.smembers(RedisKeys.userSessions(employeeRecord.id))
@@ -147,6 +146,8 @@ export class AuthService {
     if (expiredSessionHashes.length > 0) {
       await this.redis.srem(RedisKeys.userSessions(employeeRecord.id), expiredSessionHashes)
     }
+
+    return { sessionIdRaw, rememberMe }
   }
 }
 
