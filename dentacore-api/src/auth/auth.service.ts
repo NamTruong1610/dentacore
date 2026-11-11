@@ -54,7 +54,7 @@ export class AuthService {
           roles: employeeRecord.roles,
           userAgent: '',
           ip: '',
-          absoluteExpiresAt: absoluteExpiresAt
+          absoluteExpiresAt
         }),
         'EX',
         RedisTtl.sessionIdle
@@ -73,6 +73,32 @@ export class AuthService {
       )
       .exec()
 
+    const sessionIdHashes = await this.redis.smembers(RedisKeys.userSessions(employeeRecord.id))
+
+    const pipeline = this.redis.pipeline()
+
+    if (sessionIdHashes.length > 0) {
+
+      for (const sessionIdHash of sessionIdHashes) {
+        pipeline.exists(RedisKeys.session(sessionIdHash))
+
+      }
+    }
+    const results = await pipeline.exec()
+
+    const expiredSessionHashes: string[] = []
+
+    if (results) {
+      for (let i = 0; i < results.length; i++) {
+        if (results[i][0] === null && results[i][1] === 0) expiredSessionHashes.push(sessionIdHashes[i])
+      }
+    }
+
+    if (expiredSessionHashes.length > 0) {
+      await this.redis.srem(RedisKeys.userSessions(employeeRecord.id), expiredSessionHashes)
+    }
+    
     return { sessionIdRaw, rememberMe: loginPasswordDto.remember }
   }
 }
+
