@@ -83,14 +83,15 @@ export class EmployeeRepository {
     });
   }
 
-  async findActiveEmployeeByEmployeeNumber(employeeNo: string) {
+  async findActiveEmployeeByEmployeeNumber(employeeNumber: string) {
     return await this.txHost.tx.employee.findFirst({
       select: {
         id: true,
         roles: true,
+        passwordHash: true,
       },
       where: {
-        employeeNo,
+        employeeNumber,
         deletedAt: null,
         inviteStatus: InviteStatus.INVITED,
         activeStatus: ActiveStatus.ACTIVE

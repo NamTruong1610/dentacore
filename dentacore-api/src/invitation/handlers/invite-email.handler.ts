@@ -5,7 +5,7 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { InvitationService } from '../invitation.service.js';
 
-type InvitePayload = { employeeId: string; email: string; issuerNationalId: string, employeeNo: string };
+type InvitePayload = { employeeId: string; email: string; issuerNationalId: string, employeeNumber: string };
 
 @Injectable()
 export class InviteEmailHandler {
