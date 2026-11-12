@@ -83,6 +83,43 @@ export class EmployeeRepository {
     });
   }
 
+  async findActiveEmployeeByNumber(employeeNumber: string) {
+    return await this.txHost.tx.employee.findFirst({
+      select: {
+        id: true,
+        roles: true,
+        passwordHash: true,
+      },
+      where: {
+        employeeNumber,
+        deletedAt: null,
+        inviteStatus: InviteStatus.INVITED,
+        activeStatus: ActiveStatus.ACTIVE
+      }
+    })
+  }
+
+  async findActiveEmployeeById(employeeId: string) {
+    return await this.txHost.tx.employee.findFirst({
+      select: {
+        id: true,
+        roles: true,
+        mfaCredentials: {
+          select: {
+            encryptedSecret: true,
+            lastUsedTimeStep: true
+          }
+        }
+      },
+      where: {
+        id: employeeId,
+        deletedAt: null,
+        inviteStatus: InviteStatus.INVITED,
+        activeStatus: ActiveStatus.ACTIVE
+      }
+    })
+  }
+
   async markInvited(id: string) {
     const { count } = await this.txHost.tx.employee.updateMany({
       where: { id, inviteStatus: InviteStatus.UNINVITED, deletedAt: null },

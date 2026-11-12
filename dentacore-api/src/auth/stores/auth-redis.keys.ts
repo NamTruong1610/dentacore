@@ -11,7 +11,9 @@ export const RedisKeys = {
 // temporary key must be written with its TTL in the same command (SET ... EX).
 export const RedisTtl = {
   sessionIdle: 30 * 60, // capped at the remaining absolute lifetime per request
+  sessionAbsolute: 12 * 60 * 60,
   sessionIdleRememberMe: 7 * 24 * 60 * 60,
+  sessionRememberMeAbsolute: 30 * 24 * 60 * 60,
   mfaChallenge: 5 * 60,
   activation: 15 * 60,
 } as const;
