@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, GoneException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, GoneException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 import { Outbox } from '@nestjs/outbox';
 import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
@@ -64,11 +64,11 @@ export class InvitationService {
         await this.outbox.add(this.txHost.tx, {
           topic: 'employee.invited',
           key: employee.id,
-          payload: { 
-            employeeId: employee.id, 
-            email, 
+          payload: {
+            employeeId: employee.id,
+            email,
             employeeNumber: employee.employeeNumber,
-            issuerNationalId: 'request-user-id-placeholder' 
+            issuerNationalId: 'request-user-id-placeholder'
           },
         });
       }
@@ -156,16 +156,22 @@ export class InvitationService {
 
     const rawMfaSecret = this.secretCipher.decrypt(encryptedSecret, employeeId)
 
-    const isValid = await this.mfaService.verifyTotpToken(rawMfaSecret, totpDto.totp)
+    const { valid, timeStep, delta } = await this.mfaService.verifyTotpToken(rawMfaSecret, totpDto.totp, null)
 
-    if (!isValid) {
+    if (!valid) {
       throw new BadRequestException('OTP invalid or expired');
     }
 
     await this.txHost.withTransaction(async () => {
+      const isValidOtpTimeStep = await this.mfaCredentialService.isOtpValidByTimeStep(employeeId, timeStep)
+
+      if (!isValidOtpTimeStep) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
       // Consume invite token
       const isMatched = await this.inviteTokenRepo.consumeInviteTokenByHash(inviteTokenHash)
-      if (!isMatched) throw new ConflictException('Token invalid or expired'); 
+      if (!isMatched) throw new ConflictException('Token invalid or expired');
 
       // Save mfa credentials
       await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret)

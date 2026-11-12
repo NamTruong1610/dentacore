@@ -11,6 +11,7 @@ import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { MfaService } from './mfa/mfa.service.js';
 import { SecretCipherService } from '../common/crypto/secret-cipher.service.js';
+import { MfaCredentialsService } from '../mfa-credentials/mfa-credentials.service.js';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +22,8 @@ export class AuthService {
     private readonly employeeService: EmployeeService,
     private readonly passwordHasher: PasswordHasher,
     private readonly mfaService: MfaService,
-    private readonly secretCipher: SecretCipherService
+    private readonly secretCipher: SecretCipherService,
+    private readonly mfaCredentialsService: MfaCredentialsService
   ) { }
   async login(loginPasswordDto: LoginPasswordDto) {
 
@@ -77,9 +79,15 @@ export class AuthService {
     if (!encryptedSecret) throw new UnauthorizedException('Invalid credentials')
     const mfaSecretRaw = this.secretCipher.decrypt(encryptedSecret, employeeId)
 
-    const isValidOtp = await this.mfaService.verifyTotpToken(mfaSecretRaw, verifyOtpDto.otp)
+    const { valid, timeStep, delta } = await this.mfaService.verifyTotpToken(mfaSecretRaw, verifyOtpDto.otp, employeeRecord.mfaCredentials.lastUsedTimeStep)
 
-    if (!isValidOtp) {
+    if (!valid) {
+      throw new UnauthorizedException('Invalid credentials')
+    }
+
+    const isValidTimeStep = await this.mfaCredentialsService.isOtpValidByTimeStep(employeeRecord.id, timeStep)
+
+    if (!isValidTimeStep) {
       throw new UnauthorizedException('Invalid credentials')
     }
 

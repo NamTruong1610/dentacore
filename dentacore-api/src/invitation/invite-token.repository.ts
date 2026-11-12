@@ -9,6 +9,11 @@ export class InviteTokenRepository {
 
   findActiveInviteToken(tokenHash: string) {
     return this.txHost.tx.inviteToken.findFirst({
+      select: {
+        employeeId: true,
+        expiresAt: true,
+        sentToEmail: true
+      },
       where: {
         tokenHash,
         revokedAt: null,

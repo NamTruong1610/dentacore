@@ -25,5 +25,16 @@ export class MfaCredentialsRepository {
 
   }
 
+  async findAndUpdateTimeStepMany(employeeId: string, newTimeStep: number) {
+    const { count } = await this.txHost.tx.mfaCredentials.updateMany({
+      where: {
+        employeeId,
+        OR: [{ lastUsedTimeStep: null }, { lastUsedTimeStep: { lt: newTimeStep } }],
+      },
+      data: { lastUsedTimeStep: newTimeStep },
+    });
+
+    return count === 1
+  }
 
 } 

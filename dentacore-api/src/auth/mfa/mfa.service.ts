@@ -7,9 +7,18 @@ export class MfaService {
     return await generate({ secret: mfaSecret })
   }
 
-  async verifyTotpToken(mfaSecret: string, totpToken: string) {
-    const verificationObj = await verify({ secret: mfaSecret, token: totpToken })
-    return verificationObj.valid === true
+  async verifyTotpToken(mfaSecret: string, totpToken: string, lastUsedTimeStep: number | null) {
+    const verificationObj = await verify({
+      secret: mfaSecret,
+      token: totpToken,
+      strategy: "totp",
+      epochTolerance: 30,
+      afterTimeStep: lastUsedTimeStep ?? undefined
+    })
+    if (!verificationObj.valid || !('timeStep' in verificationObj)) {
+      return { valid: false as const };
+    }
+    return { valid: true as const, timeStep: verificationObj.timeStep, delta: verificationObj.delta };
   }
 
   generateUri(issuer: string, label: string, secret: string) {

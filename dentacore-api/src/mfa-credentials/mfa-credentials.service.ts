@@ -8,4 +8,8 @@ export class MfaCredentialsService {
   async saveMfaCredentialsAtInvite(employeeId: string, encryptedSecret: string) {
     await this.mfaRepo.saveInviteMfaCredentials(employeeId, encryptedSecret)
   }
+
+  async isOtpValidByTimeStep(employeeId: string, newTimeStep: number) {
+    return await this.mfaRepo.findAndUpdateTimeStepMany(employeeId, newTimeStep)
+  }
 }
