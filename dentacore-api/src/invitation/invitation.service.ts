@@ -163,18 +163,13 @@ export class InvitationService {
     }
 
     await this.txHost.withTransaction(async () => {
-      const isValidOtpTimeStep = await this.mfaCredentialService.isOtpValidByTimeStep(employeeId, timeStep)
-
-      if (!isValidOtpTimeStep) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
 
       // Consume invite token
       const isMatched = await this.inviteTokenRepo.consumeInviteTokenByHash(inviteTokenHash)
       if (!isMatched) throw new ConflictException('Token invalid or expired');
 
       // Save mfa credentials
-      await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret)
+      await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret, timeStep)
 
       // Save password hash and switch to active
       const isSaved = await this.employeeService.activateWithPasswordHash(employeeId, passwordHash)

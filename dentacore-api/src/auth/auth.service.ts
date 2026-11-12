@@ -75,17 +75,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    const encryptedSecret = employeeRecord.mfaCredentials.encryptedSecret
+    const encryptedSecret = employeeRecord.mfaCredentials?.encryptedSecret
     if (!encryptedSecret) throw new UnauthorizedException('Invalid credentials')
     const mfaSecretRaw = this.secretCipher.decrypt(encryptedSecret, employeeId)
 
-    const { valid, timeStep, delta } = await this.mfaService.verifyTotpToken(mfaSecretRaw, verifyOtpDto.otp, employeeRecord.mfaCredentials.lastUsedTimeStep)
+    const otpVerificationObj = await this.mfaService.verifyTotpToken(mfaSecretRaw, verifyOtpDto.otp, employeeRecord.mfaCredentials.lastUsedTimeStep);
+    if (!otpVerificationObj.valid) throw new UnauthorizedException('Invalid credentials');
 
-    if (!valid) {
-      throw new UnauthorizedException('Invalid credentials')
-    }
-
-    const isValidTimeStep = await this.mfaCredentialsService.isOtpValidByTimeStep(employeeRecord.id, timeStep)
+    const isValidTimeStep = await this.mfaCredentialsService.isOtpValidByTimeStep(employeeRecord.id, otpVerificationObj.timeStep)
 
     if (!isValidTimeStep) {
       throw new UnauthorizedException('Invalid credentials')

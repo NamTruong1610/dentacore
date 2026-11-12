@@ -106,7 +106,8 @@ export class EmployeeRepository {
         roles: true,
         mfaCredentials: {
           select: {
-            encryptedSecret: true
+            encryptedSecret: true,
+            lastUsedTimeStep: true
           }
         }
       },

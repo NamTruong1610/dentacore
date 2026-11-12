@@ -5,8 +5,8 @@ import { MfaCredentialsRepository } from './mfa-credentials.repository.js';
 export class MfaCredentialsService {
   constructor(private readonly mfaRepo: MfaCredentialsRepository) { }
 
-  async saveMfaCredentialsAtInvite(employeeId: string, encryptedSecret: string) {
-    await this.mfaRepo.saveInviteMfaCredentials(employeeId, encryptedSecret)
+  async saveMfaCredentialsAtInvite(employeeId: string, encryptedSecret: string, timeStep: number) {
+    await this.mfaRepo.saveInviteMfaCredentials(employeeId, encryptedSecret, timeStep)
   }
 
   async isOtpValidByTimeStep(employeeId: string, newTimeStep: number) {
