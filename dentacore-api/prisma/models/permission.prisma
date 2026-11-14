@@ -3,7 +3,6 @@ model Permission {
   action      Action
   target      Target
   description String?
-  roles       Role[]
 
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
