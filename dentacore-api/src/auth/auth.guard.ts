@@ -27,21 +27,20 @@ export class AuthGuard implements CanActivate {
 
     const parsedPayload = JSON.parse(rawPayload)
 
-    if (!parsedPayload) {
-      throw new UnauthorizedException('Invalid credentials')
-    }
-
-    // Slide session
+    // Slide or delete expired session
     const timeRemainingMs = parsedPayload.absoluteExpiresAt - Date.now()
 
-    if (timeRemainingMs < 0) {
+    const sessionIdle = parsedPayload.rememberMe === true ? RedisTtl.sessionIdleRememberMe : RedisTtl.sessionIdle
+    const timeRemainingSeconds = Math.floor(Math.min(timeRemainingMs, sessionIdle * 1000) / 1000)
+
+    if (timeRemainingSeconds < 0) {
+      await this.redis.del(RedisKeys.session(sessionIdHash))
+      await this.redis.srem(RedisKeys.userSessions(parsedPayload.id), sessionIdHash)
       throw new UnauthorizedException('Session expired')
     }
 
-    const sessionIdle = parsedPayload.rememberMe === true ? RedisTtl.sessionIdle : RedisTtl.sessionIdleRememberMe
-    const timeRemainingSeconds = Math.min(timeRemainingMs, sessionIdle * 1000) / 1000
-
     await this.redis.expire(RedisKeys.session(sessionIdHash), timeRemainingSeconds)
+    
 
     // Set request.user
     request.user = {

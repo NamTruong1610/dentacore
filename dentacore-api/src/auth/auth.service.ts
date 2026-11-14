@@ -66,10 +66,6 @@ export class AuthService {
 
     const parsedPayload = JSON.parse(rawMfaPayload)
 
-    if (!parsedPayload) {
-      throw new UnauthorizedException('Invalid credentials')
-    }
-
     const employeeId: string = parsedPayload.employeeId
     const rememberMe: boolean = parsedPayload.rememberMe 
 
