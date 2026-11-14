@@ -64,7 +64,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    const { employeeId, rememberMe } = JSON.parse(rawMfaPayload)
+    const parsedPayload = JSON.parse(rawMfaPayload)
+
+    if (!parsedPayload) {
+      throw new UnauthorizedException('Invalid credentials')
+    }
+
+    const employeeId: string = parsedPayload.employeeId
+    const rememberMe: boolean = parsedPayload.rememberMe 
 
     const sessionIdRaw = this.tokenService.generate()
     const sessionIdHash = this.tokenService.digest(sessionIdRaw)
@@ -114,7 +121,8 @@ export class AuthService {
           roles: employeeRecord.roles,
           userAgent: '',
           ip: '',
-          absoluteExpiresAt
+          absoluteExpiresAt,
+          rememberMe
         }),
         'EX',
         sessionIdle
