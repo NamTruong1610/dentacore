@@ -45,7 +45,6 @@ export class AuthGuard implements CanActivate {
     // Set request.user
     request.user = {
       id: parsedPayload.id,
-      roles: parsedPayload.roles,
       sessionIdHash,
     }
 

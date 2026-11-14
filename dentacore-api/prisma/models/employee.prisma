@@ -16,9 +16,10 @@ model Employee {
   roles          Role[]
   inviteTokens   InviteToken[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  employeeRoles EmployeeRole[]
 
   @@unique([employeeNumber, updatedAt])
 }

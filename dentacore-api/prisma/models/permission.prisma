@@ -8,4 +8,6 @@ model Permission {
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
   rolePermissions RolePermission[]
+
+  @@unique([action, target])
 }

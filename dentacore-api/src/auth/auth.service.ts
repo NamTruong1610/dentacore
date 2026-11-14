@@ -114,7 +114,6 @@ export class AuthService {
         RedisKeys.session(sessionIdHash),
         JSON.stringify({
           id: employeeId,
-          roles: employeeRecord.roles,
           userAgent: '',
           ip: '',
           absoluteExpiresAt,
