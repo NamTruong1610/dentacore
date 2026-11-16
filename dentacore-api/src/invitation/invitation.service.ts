@@ -10,15 +10,12 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { InviteTokenRepository } from './invite-token.repository.js';
 import { MailService } from '../mail/mail.service.js';
-import { MfaService } from '../auth/mfa/mfa.service.js';
+
 import { EmployeeService } from '../employee/employee.service.js';
 import { SecretCipherService } from '../common/crypto/secret-cipher.service.js';
-import { REDIS_AUTH } from '../redis/redis.constants.js';
-import { Redis } from 'ioredis';
-import { RedisKeys, RedisTtl } from '../auth/stores/auth-redis.keys.js';
 import { TOTPVerificationDto } from './dto/totp-verification.dto.js';
-import { MfaCredentialsService } from '../mfa-credentials/mfa-credentials.service.js';
-import { SaveMfaDto } from '../mfa-credentials/dto/save-invite-mfa.dto.js';
+import { PendingInvitationStore } from './stores/pending-invitation.store.js';
+import { MfaService } from '../mfa/mfa.service.js';
 
 type InvitePayload = { employeeId: string; email: string; issuerNationalId: string, employeeNumber: string };
 
@@ -32,9 +29,7 @@ export class InvitationService {
     private readonly mailService: MailService,
     private readonly employeeService: EmployeeService,
     private readonly inviteTokenRepo: InviteTokenRepository,
-    private readonly mfaCredentialService: MfaCredentialsService,
-    private readonly secretCipher: SecretCipherService,
-    @Inject(REDIS_AUTH) private readonly redis: Redis,
+    private readonly pendingInvitationStore: PendingInvitationStore,
     private readonly txHost: TransactionHost<TransactionalAdapterPrisma>
   ) { }
 
@@ -111,28 +106,22 @@ export class InvitationService {
     }
     const passwordHash = await this.passwordHasher.hash(invitePasswordSetupDto.rawPassword)
 
-    const rawSecret = this.mfaService.generateMfaSecret()
-    const encryptedSecret = this.secretCipher.encrypt(rawSecret, inviteTokenRecord.employeeId);
+    const rawSecret = this.mfaService.createSecret()
+    const encryptedSecret = this.mfaService.encryptSecret(inviteTokenRecord.employeeId, rawSecret)
 
     // At submission, create a pending mfa setup in Redis auth instance: { passwordHash, employeeId, excryptedSecret } keyed by tokenHash for idempotency, and returns the uri (otpauth://...). 
     // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret. 
     // We pass the employee's email for the 'label' parameter in generateUri(), the email is taken from sentToEmail field in InviteToken schema
-    const remaining = Math.floor((inviteTokenRecord.expiresAt.getTime() - Date.now()) / 1000);
-    const remainingTtl = Math.min(RedisTtl.activation, remaining)
 
-    if (remainingTtl <= 0) throw new BadRequestException('Invite token invalid or expired');
+    const isSaved = await this.pendingInvitationStore.save(inviteTokenHash, { passwordHash, encryptedSecret, inviteTokenExpiresAt: inviteTokenRecord.expiresAt, employeeId: inviteTokenRecord.employeeId })
 
-    await this.redis.set(
-      RedisKeys.activation(inviteTokenHash),
-      JSON.stringify({ passwordHash, encryptedSecret, employeeId: inviteTokenRecord.employeeId }),
-      "EX",
-      remainingTtl // Which ever runs out first, the token's remaining time or the invite challenge (15 mins)
-    )
+    if (!isSaved) throw new BadRequestException('Invite token invalid or expired');
 
-    const otpUri = this.mfaService.generateUri('Dentacore', inviteTokenRecord.sentToEmail, rawSecret)
+    const otpUri = this.mfaService.buildOtpauthUri(inviteTokenRecord.sentToEmail, rawSecret)
 
     return { otpauthUri: otpUri };
   }
+
 
   async verifyTotp(totpDto: TOTPVerificationDto) {
     const inviteTokenHash = this.tokenService.digest(totpDto.inviteToken)
@@ -142,7 +131,7 @@ export class InvitationService {
       throw new BadRequestException('Invite token invalid or expired')
     }
 
-    const rawPayload = await this.redis.get(RedisKeys.activation(inviteTokenHash))
+    const rawPayload = await this.pendingInvitationStore.get(inviteTokenHash)
 
     if (!rawPayload) {
       throw new BadRequestException('MFA challenge expired');
@@ -154,9 +143,7 @@ export class InvitationService {
       throw new BadRequestException('Id(s) not matched');
     }
 
-    const rawMfaSecret = this.secretCipher.decrypt(encryptedSecret, employeeId)
-
-    const { valid, timeStep, delta } = await this.mfaService.verifyTotpToken(rawMfaSecret, totpDto.totp, null)
+    const { valid, timeStep } = await this.mfaService.verifyEnrollmentOtp(employeeId, encryptedSecret, totpDto.totp)
 
     if (!valid) {
       throw new BadRequestException('OTP invalid or expired');
@@ -169,7 +156,7 @@ export class InvitationService {
       if (!isMatched) throw new ConflictException('Token invalid or expired');
 
       // Save mfa credentials
-      await this.mfaCredentialService.saveMfaCredentialsAtInvite(inviteTokenRecord.employeeId, encryptedSecret, timeStep)
+      await this.mfaService.saveCredentials(inviteTokenRecord.employeeId, encryptedSecret, timeStep)
 
       // Save password hash and switch to active
       const isSaved = await this.employeeService.activateWithPasswordHash(employeeId, passwordHash)
@@ -179,8 +166,8 @@ export class InvitationService {
     })
 
     // Delete pending payload from Redis. No outbox the because the invite token is consumed, subsequent access to the invite link will be declined and the Redis payload can time out on its own
-    await this.redis.del(RedisKeys.activation(inviteTokenHash));
-
+    const deleted = await this.pendingInvitationStore.delete(inviteTokenHash);
+    if (!deleted) throw new BadRequestException('Challenge deletion failed');
   }
 
 }
