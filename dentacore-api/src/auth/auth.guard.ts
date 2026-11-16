@@ -1,16 +1,12 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { TokenService } from '../common/crypto/token.service.js';
-import { REDIS_AUTH } from '../redis/redis.constants.js';
-import { Redis } from 'ioredis';
-import { RedisKeys, RedisTtl } from './stores/auth-redis.keys.js';
 import { SessionStore } from './stores/session.store.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly tokenService: TokenService,
-    private readonly sessionStore: SessionStore,
-    @Inject(REDIS_AUTH) private readonly redis: Redis,
+    private readonly sessionStore: SessionStore
   ) { }
 
   async canActivate(
