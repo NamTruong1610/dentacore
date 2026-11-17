@@ -36,7 +36,9 @@ export class MfaChallengeStore {
     return mfaChallengeIdRaw
   }
   async get(mfaChallengeIdHash: string) {
-    return await this.redis.get(RedisKeys.mfaChallenge(mfaChallengeIdHash))
+    const rawPayload = await this.redis.get(RedisKeys.mfaChallenge(mfaChallengeIdHash))
+    if (!rawPayload) return null
+    else return JSON.parse(rawPayload)
   }
   async consume(mfaChallengeIdHash: string) {
     const consumed = await this.redis.del(RedisKeys.mfaChallenge(mfaChallengeIdHash))

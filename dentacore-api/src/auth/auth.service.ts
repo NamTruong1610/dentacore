@@ -40,19 +40,14 @@ export class AuthService {
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
-    const rawMfaPayload = await this.mfaChallengeStore.get(mfaChallengeIdHash)
+    const parsedMfaPayload = await this.mfaChallengeStore.get(mfaChallengeIdHash)
 
-    if (!rawMfaPayload) {
+    if (!parsedMfaPayload) {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    const parsedPayload = JSON.parse(rawMfaPayload)
-
-    const employeeId: string = parsedPayload.employeeId
-    const rememberMe: boolean = parsedPayload.rememberMe
-
-    // const sessionIdRaw = this.tokenService.generate()
-    // const sessionIdHash = this.tokenService.digest(sessionIdRaw)
+    const employeeId: string = parsedMfaPayload.employeeId
+    const rememberMe: boolean = parsedMfaPayload.rememberMe
 
     const employeeRecord = await this.employeeService.findActiveByEmployeeId(employeeId)
 
@@ -71,7 +66,7 @@ export class AuthService {
     const { sessionIdRaw, absoluteExpiresAt } = await this.sessionStore.create(employeeRecord.id, rememberMe)
 
     
-    return { sessionIdRaw, absoluteExpiresAt }
+    return { sessionIdRaw, absoluteExpiresAt, rememberMe }
   }
 }
 

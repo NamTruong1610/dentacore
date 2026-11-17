@@ -14,8 +14,10 @@ export class SessionStore {
 
   private assertExecOk(results: [Error | null, unknown][] | null, context: string) {
     if (!results) throw new Error(`${context}: transaction aborted`);
-    const failed = results.find(([err]) => err);
-    if (failed) throw failed[0];
+    for (const result of results) {
+      if (result[0]) throw result[0]
+    }
+
   }
 
   private readonly logger = new Logger(SessionStore.name);
@@ -67,29 +69,12 @@ export class SessionStore {
       throw err;
     }
 
-    const sessionIdHashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
-
-    const pipeline = this.redis.pipeline()
-
-    if (sessionIdHashes.length > 0) {
-
-      for (const sessionIdHash of sessionIdHashes) {
-        pipeline.exists(RedisKeys.session(sessionIdHash))
-
-      }
-    }
-    const results = await pipeline.exec()
-
-    const expiredSessionHashes: string[] = []
-
-    if (results) {
-      for (let i = 0; i < results.length; i++) {
-        if (results[i][0] === null && results[i][1] === 0) expiredSessionHashes.push(sessionIdHashes[i])
-      }
-    }
-
-    if (expiredSessionHashes.length > 0) {
-      await this.redis.srem(RedisKeys.userSessions(employeeId), expiredSessionHashes)
+    // Prune expired sessions
+    try {
+      await this.pruneExpired(employeeId)
+    } catch(error) {
+      this.logger.error(`Failed to prune expired sessions`);
+      throw error
     }
 
     return { sessionIdRaw, absoluteExpiresAt }
@@ -113,7 +98,6 @@ export class SessionStore {
 
     if (timeRemainingSeconds <= 0) {
       await this.revoke(parsedPayload.id, sessionIdHash)
-      this.logger.error('Session expired')
       return null
     }
 

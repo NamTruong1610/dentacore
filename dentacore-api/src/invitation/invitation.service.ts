@@ -113,7 +113,7 @@ export class InvitationService {
     // If the user submits the form again, the idempotent token hash updates payload with changed password hash or encryption secret. 
     // We pass the employee's email for the 'label' parameter in generateUri(), the email is taken from sentToEmail field in InviteToken schema
 
-    const isSaved = await this.pendingInvitationStore.save(inviteTokenHash, { passwordHash, encryptedSecret, inviteTokenExpiresAt: inviteTokenRecord.expiresAt, employeeId: inviteTokenRecord.employeeId })
+    const isSaved = await this.pendingInvitationStore.save(inviteTokenHash, { passwordHash, encryptedSecret, employeeId: inviteTokenRecord.employeeId }, inviteTokenRecord.expiresAt)
 
     if (!isSaved) throw new BadRequestException('Invite token invalid or expired');
 
@@ -131,13 +131,13 @@ export class InvitationService {
       throw new BadRequestException('Invite token invalid or expired')
     }
 
-    const rawPayload = await this.pendingInvitationStore.get(inviteTokenHash)
+    const parsedPayload = await this.pendingInvitationStore.get(inviteTokenHash)
 
-    if (!rawPayload) {
+    if (!parsedPayload) {
       throw new BadRequestException('MFA challenge expired');
     }
 
-    const { passwordHash, encryptedSecret, employeeId } = JSON.parse(rawPayload)
+    const { passwordHash, encryptedSecret, employeeId } = parsedPayload
 
     if (employeeId !== inviteTokenRecord.employeeId) {
       throw new BadRequestException('Id(s) not matched');

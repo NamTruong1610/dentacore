@@ -3,14 +3,16 @@ import { BadRequestException, Inject, Injectable, Logger, NotFoundException, Una
 import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';
 import { Redis } from 'ioredis';
-import { RedisKeys, RedisTtl } from '../../auth/stores/auth-redis.keys.js';
+
 
 interface PendingActivation {
   passwordHash: string,
   encryptedSecret: string,
-  inviteTokenExpiresAt: Date,
   employeeId: string
 }
+
+const activationKey = (inviteTokenHash: string) => `invitation:activation:${inviteTokenHash}`;
+const ACTIVATION_TTL_SECONDS = 15 * 60;
 
 @Injectable()
 export class PendingInvitationStore {
@@ -26,13 +28,13 @@ export class PendingInvitationStore {
   }
 
   private readonly logger = new Logger(PendingInvitationStore.name);
-  async save(inviteTokenHash: string, data: PendingActivation) {
-    const remaining = Math.floor((data.inviteTokenExpiresAt.getTime() - Date.now()) / 1000);
-    const remainingTtl = Math.min(RedisTtl.activation, remaining)
+  async save(inviteTokenHash: string, data: PendingActivation, tokenExpiresAt: Date) {
+    const remaining = Math.floor((tokenExpiresAt.getTime() - Date.now()) / 1000);
+    const remainingTtl = Math.min(ACTIVATION_TTL_SECONDS, remaining)
 
     if (remainingTtl <= 0) return false;
     await this.redis.set(
-      RedisKeys.activation(inviteTokenHash),
+      activationKey(inviteTokenHash),
       JSON.stringify({ passwordHash: data.passwordHash, encryptedSecret: data.encryptedSecret, employeeId: data.employeeId }),
       "EX",
       remainingTtl // Which ever runs out first, the token's remaining time or the invite challenge (15 mins)
@@ -40,10 +42,12 @@ export class PendingInvitationStore {
     return true
   }
   async get(inviteTokenHash: string) {
-    return await this.redis.get(RedisKeys.activation(inviteTokenHash))
+    const rawPayload = await this.redis.get(activationKey(inviteTokenHash))
+    if (!rawPayload) return null
+    else return JSON.parse(rawPayload)
   }
   async delete(inviteTokenHash: string) {
-    return await this.redis.del(RedisKeys.activation(inviteTokenHash));
+    return await this.redis.del(activationKey(inviteTokenHash));
   }
 
 

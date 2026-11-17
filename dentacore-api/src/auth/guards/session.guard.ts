@@ -1,9 +1,9 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { TokenService } from '../common/crypto/token.service.js';
-import { SessionStore } from './stores/session.store.js';
+import { TokenService } from '../../common/crypto/token.service.js';
+import { SessionStore } from '../stores/session.store.js';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class SessionGuard implements CanActivate {
   constructor(
     private readonly tokenService: TokenService,
     private readonly sessionStore: SessionStore

@@ -38,7 +38,7 @@ export class MfaCredentialsRepository {
   }
 
   async findByEmployeeId(employeeId: string) {
-    return await this.txHost.tx.mfaCredentials.findOne({
+    return await this.txHost.tx.mfaCredentials.findUnique({
       select: {
         encryptedSecret: true,
         lastUsedTimeStep: true
