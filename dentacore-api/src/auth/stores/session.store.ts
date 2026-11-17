@@ -15,9 +15,8 @@ export class SessionStore {
   private assertExecOk(results: [Error | null, unknown][] | null, context: string) {
     if (!results) throw new Error(`${context}: transaction aborted`);
     for (const result of results) {
-      if (result[0]) throw result[0]
+      if (result[0]) throw new Error(`Error ${result[0].name}: transaction aborted`);
     }
-
   }
 
   private readonly logger = new Logger(SessionStore.name);
@@ -74,7 +73,6 @@ export class SessionStore {
       await this.pruneExpired(employeeId)
     } catch(error) {
       this.logger.error(`Failed to prune expired sessions`);
-      throw error
     }
 
     return { sessionIdRaw, absoluteExpiresAt }
