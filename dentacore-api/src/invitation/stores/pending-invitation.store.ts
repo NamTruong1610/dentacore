@@ -18,7 +18,6 @@ const ACTIVATION_TTL_SECONDS = 15 * 60;
 export class PendingInvitationStore {
   constructor(
     @Inject(REDIS_AUTH) private readonly redis: Redis,
-    private readonly tokenService: TokenService,
   ) { }
 
   private readonly logger = new Logger(PendingInvitationStore.name);

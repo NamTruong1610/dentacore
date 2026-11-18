@@ -4,6 +4,7 @@ export const RedisKeys = {
   session: (sessionIdHash: string) => `auth:session:${sessionIdHash}`,
   userSessions: (userId: string) => `auth:user:${userId}:sessions`,
   mfaChallenge: (challengeId: string) => `auth:mfa:${challengeId}`,
+  mfaAttempts: (challengeId: string) => `auth:mfa:${challengeId}:attempts`
 } as const;
 
 // TTLs in seconds. The sessions instance runs `noeviction`, so every

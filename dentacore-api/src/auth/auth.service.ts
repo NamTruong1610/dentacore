@@ -7,6 +7,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { SessionStore } from './stores/session.store.js';
 import { MfaChallengeStore } from './stores/mfa-challenge.store.js';
 import { MfaService } from '../mfa/mfa.service.js';
+import { ValidateNested } from 'class-validator';
 
 
 
@@ -42,13 +43,15 @@ export class AuthService {
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
-    const validAttempt = await this.mfaChallengeStore.registerAttempt(mfaChallengeIdHash)
-
-    if (!validAttempt) throw new RequestTimeoutException()
 
     const parsedMfaPayload = await this.mfaChallengeStore.get(mfaChallengeIdHash)
 
     if (!parsedMfaPayload) {
+      throw new UnauthorizedException('Invalid credentials')
+    }
+
+    const isValidAttempt = await this.mfaChallengeStore.registerAttempt(mfaChallengeIdHash)
+    if (!isValidAttempt) {
       throw new UnauthorizedException('Invalid credentials')
     }
 

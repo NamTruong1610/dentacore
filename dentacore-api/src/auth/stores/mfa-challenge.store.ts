@@ -3,6 +3,7 @@ import { RedisKeys, RedisTtl } from './auth-redis.keys.js';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';
 import { Redis } from 'ioredis';
+import { RedisUtils } from '../../redis/redis.utils.js';
 
 const MAX_OTP_ATTEMPTS = 5
 
@@ -11,6 +12,7 @@ export class MfaChallengeStore {
   constructor(
     @Inject(REDIS_AUTH) private readonly redis: Redis,
     private readonly tokenService: TokenService,
+    private readonly redisUtils: RedisUtils
   ) { }
 
   private readonly logger = new Logger(MfaChallengeStore.name);
@@ -19,15 +21,32 @@ export class MfaChallengeStore {
     // Create pending mfa challenge
     const mfaChallengeIdRaw = this.tokenService.generate()
     const mfaChallengeIdHash = this.tokenService.digest(mfaChallengeIdRaw)
-    await this.redis.set(
-      RedisKeys.mfaChallenge(mfaChallengeIdHash),
-      JSON.stringify({
-        employeeId,
-        rememberMe
-      }),
-      'EX',
-      RedisTtl.mfaChallenge
-    )
+    try {
+      const results = await this.redis
+        .multi()
+        .set(
+          RedisKeys.mfaChallenge(mfaChallengeIdHash),
+          JSON.stringify({
+            employeeId,
+            rememberMe
+          }),
+          'EX',
+          RedisTtl.mfaChallenge
+        )
+        .set(
+          RedisKeys.mfaAttempts(mfaChallengeIdHash),
+          0,
+          'EX',
+          RedisTtl.mfaChallenge
+        )
+        .exec()
+
+      this.redisUtils.assertExecOk(results, 'challenge created')
+    } catch (error) {
+      throw error;
+    }
+
+
     return mfaChallengeIdRaw
   }
   async get(mfaChallengeIdHash: string) {
@@ -42,10 +61,20 @@ export class MfaChallengeStore {
   }
 
   async registerAttempt(mfaChallengeIdHash: string) {
-    const attempts = await this.redis.incr(mfaChallengeIdHash)
-    if (attempts > MAX_OTP_ATTEMPTS) {
-      await this.redis.del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
-      return false
+    const attempts = await this.redis.incr(RedisKeys.mfaAttempts(mfaChallengeIdHash))
+    try {
+      if (attempts > MAX_OTP_ATTEMPTS) {
+        const results = await this.redis
+          .multi()
+          .del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
+          .del(RedisKeys.mfaAttempts(mfaChallengeIdHash))
+          .exec()
+        this.redisUtils.assertExecOk(results, 'challenge deleted')
+        return false
+      }
+      return true;
+    } catch (error) {
+      throw error;
     }
   }
 }
