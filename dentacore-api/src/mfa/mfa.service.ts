@@ -55,16 +55,17 @@ export class MfaService {
 
   async verifyAndClaim(employeeId: string, otp: string) {
     const mfaCredentialsRecord = await this.mfaCredentialsRepo.findByEmployeeId(employeeId)
-    if (!mfaCredentialsRecord) throw new UnauthorizedException('Invalid credentials')
+    if (!mfaCredentialsRecord) return false;
     const mfaSecretRaw = this.decryptSecret(employeeId, mfaCredentialsRecord.encryptedSecret)
 
     const otpVerificationObj = await this.verifyTotpToken(mfaSecretRaw, otp, mfaCredentialsRecord.lastUsedTimeStep);
-    if (!otpVerificationObj.valid) throw new UnauthorizedException('Invalid credentials');
+    if (!otpVerificationObj.valid) return false;
 
     const isValidTimeStep = await this.mfaCredentialsRepo.advanceLastUsedTimeStep(employeeId, otpVerificationObj.timeStep)
 
     if (!isValidTimeStep) {
-      throw new UnauthorizedException('Invalid credentials')
+      return false;
     }
+    return true
   }
 }

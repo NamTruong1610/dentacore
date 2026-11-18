@@ -24,10 +24,10 @@ export class AuthController {
     // Otherwise you would need to send response manually, like: `res.json({data})`
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { sessionIdRaw, rememberMe } = await this.authService.verifyOtp(verifyOtpDto)
+    const { sessionIdRaw, rememberMe, absoluteExpiresAt } = await this.authService.verifyOtp(verifyOtpDto)
     this.adapterHost.httpAdapter.setCookie(res, '__Host-sid', sessionIdRaw, {
       sameSite: 'strict',
-      maxAge: rememberMe === true ? 60 * 60 * 24 * 30 : undefined, 
+      maxAge: rememberMe === true ? Math.floor(absoluteExpiresAt / 1000) : undefined, 
       secure: true,
       httpOnly: true,
     });

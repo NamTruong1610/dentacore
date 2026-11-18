@@ -55,10 +55,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    await this.mfaService.verifyAndClaim(employeeRecord.id, verifyOtpDto.otp)
-
-    const claimed = await this.mfaChallengeStore.consume(mfaChallengeIdHash)
+    const claimed = await this.mfaService.verifyAndClaim(employeeRecord.id, verifyOtpDto.otp)
     if (!claimed) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const consumed = await this.mfaChallengeStore.consume(mfaChallengeIdHash)
+    if (!consumed) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

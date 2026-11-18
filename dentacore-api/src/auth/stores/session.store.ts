@@ -71,7 +71,7 @@ export class SessionStore {
     // Prune expired sessions
     try {
       await this.pruneExpired(employeeId)
-    } catch(error) {
+    } catch (error) {
       this.logger.error(`Failed to prune expired sessions`);
     }
 
@@ -82,7 +82,6 @@ export class SessionStore {
     const rawPayload = await this.redis.get(RedisKeys.session(sessionIdHash))
 
     if (!rawPayload) {
-      this.logger.error('Session payload not found')
       return null
     }
 
@@ -95,7 +94,12 @@ export class SessionStore {
     const timeRemainingSeconds = Math.floor(Math.min(timeRemainingMs, sessionIdle * 1000) / 1000)
 
     if (timeRemainingSeconds <= 0) {
-      await this.revoke(parsedPayload.id, sessionIdHash)
+      try {
+        await this.revoke(parsedPayload.id, sessionIdHash)
+      } catch(error) {
+        this.logger.error(`Failed to revoke session ${sessionIdHash}`, error instanceof Error ? error.stack : String(error))
+      }
+      
       return null
     }
 
@@ -105,17 +109,12 @@ export class SessionStore {
   }
 
   async revoke(employeeId: string, sessionIdHash: string) {
-    try {
-      const results = await this.redis
+    const results = await this.redis
       .multi()
       .del(RedisKeys.session(sessionIdHash))
       .srem(RedisKeys.userSessions(employeeId), sessionIdHash)
       .exec()
-      this.assertExecOk(results, 'session revoked');
-    } catch(error) {
-      this.logger.error(`Failed to revoke session ${sessionIdHash}`)
-    }
-    
+    this.assertExecOk(results, 'session revoked');
   }
   async pruneExpired(employeeId: string) {
     const hashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
