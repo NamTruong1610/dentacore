@@ -134,9 +134,5 @@ export class SessionStore {
       await this.redis.srem(RedisKeys.userSessions(employeeId), expiredSessionHashes);
     }
   }
-
-  async registerAttempt() {
-    
-  }
 }
 

@@ -4,6 +4,7 @@ import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';
 import { Redis } from 'ioredis';
 
+const MAX_OTP_ATTEMPTS = 5
 
 @Injectable()
 export class MfaChallengeStore {
@@ -38,6 +39,14 @@ export class MfaChallengeStore {
     const consumed = await this.redis.del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
     if (consumed === 1) return true;
     else return false
+  }
+
+  async registerAttempt(mfaChallengeIdHash: string) {
+    const attempts = await this.redis.incr(mfaChallengeIdHash)
+    if (attempts > MAX_OTP_ATTEMPTS) {
+      await this.redis.del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
+      return false
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, RequestTimeoutException, UnauthorizedException } from '@nestjs/common';
 import { LoginPasswordDto } from './dto/login-password.dto.js';
 import { TokenService } from '../common/crypto/token.service.js';
 import { EmployeeService } from '../employee/employee.service.js';
@@ -7,6 +7,8 @@ import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { SessionStore } from './stores/session.store.js';
 import { MfaChallengeStore } from './stores/mfa-challenge.store.js';
 import { MfaService } from '../mfa/mfa.service.js';
+
+
 
 @Injectable()
 export class AuthService {
@@ -39,6 +41,10 @@ export class AuthService {
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
+
+    const validAttempt = await this.mfaChallengeStore.registerAttempt(mfaChallengeIdHash)
+
+    if (!validAttempt) throw new RequestTimeoutException()
 
     const parsedMfaPayload = await this.mfaChallengeStore.get(mfaChallengeIdHash)
 
