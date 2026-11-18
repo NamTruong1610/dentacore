@@ -12,12 +12,6 @@ export class MfaChallengeStore {
     private readonly tokenService: TokenService,
   ) { }
 
-  private assertExecOk(results: [Error | null, unknown][] | null, context: string) {
-    if (!results) throw new Error(`${context}: transaction aborted`);
-    const failed = results.find(([err]) => err);
-    if (failed) throw failed[0];
-  }
-
   private readonly logger = new Logger(MfaChallengeStore.name);
 
   async create(employeeId: string, rememberMe: boolean) {

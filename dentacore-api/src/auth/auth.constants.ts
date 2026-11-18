@@ -1,1 +1,1 @@
-export const SESSION_COOKIE = Symbol('__Host-sid');
+export const SESSION_COOKIE = '__Host-sid';

@@ -21,12 +21,6 @@ export class PendingInvitationStore {
     private readonly tokenService: TokenService,
   ) { }
 
-  private assertExecOk(results: [Error | null, unknown][] | null, context: string) {
-    if (!results) throw new Error(`${context}: transaction aborted`);
-    const failed = results.find(([err]) => err);
-    if (failed) throw failed[0];
-  }
-
   private readonly logger = new Logger(PendingInvitationStore.name);
   async save(inviteTokenHash: string, data: PendingActivation, tokenExpiresAt: Date) {
     const remaining = Math.floor((tokenExpiresAt.getTime() - Date.now()) / 1000);

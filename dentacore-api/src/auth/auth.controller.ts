@@ -3,6 +3,7 @@ import { LoginPasswordDto } from './dto/login-password.dto.js';
 import { AuthService } from './auth.service.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { HttpAdapterHost } from '@nestjs/core';
+import { SESSION_COOKIE } from './auth.constants.js';
 
 @Controller('auth')
 export class AuthController {
@@ -25,7 +26,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { sessionIdRaw, rememberMe, absoluteExpiresAt } = await this.authService.verifyOtp(verifyOtpDto)
-    this.adapterHost.httpAdapter.setCookie(res, '__Host-sid', sessionIdRaw, {
+    this.adapterHost.httpAdapter.setCookie(res, SESSION_COOKIE, sessionIdRaw, {
       sameSite: 'strict',
       maxAge: rememberMe === true ? Math.floor((absoluteExpiresAt - Date.now()) / 1000) : undefined, 
       secure: true,
