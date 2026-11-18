@@ -21,30 +21,27 @@ export class MfaChallengeStore {
     // Create pending mfa challenge
     const mfaChallengeIdRaw = this.tokenService.generate()
     const mfaChallengeIdHash = this.tokenService.digest(mfaChallengeIdRaw)
-    try {
-      const results = await this.redis
-        .multi()
-        .set(
-          RedisKeys.mfaChallenge(mfaChallengeIdHash),
-          JSON.stringify({
-            employeeId,
-            rememberMe
-          }),
-          'EX',
-          RedisTtl.mfaChallenge
-        )
-        .set(
-          RedisKeys.mfaAttempts(mfaChallengeIdHash),
-          0,
-          'EX',
-          RedisTtl.mfaChallenge
-        )
-        .exec()
 
-      this.redisUtils.assertExecOk(results, 'challenge created')
-    } catch (error) {
-      throw error;
-    }
+    const results = await this.redis
+      .multi()
+      .set(
+        RedisKeys.mfaChallenge(mfaChallengeIdHash),
+        JSON.stringify({
+          employeeId,
+          rememberMe
+        }),
+        'EX',
+        RedisTtl.mfaChallenge
+      )
+      .set(
+        RedisKeys.mfaAttempts(mfaChallengeIdHash),
+        0,
+        'EX',
+        RedisTtl.mfaChallenge
+      )
+      .exec()
+
+    this.redisUtils.assertExecOk(results, 'challenge created')
 
 
     return mfaChallengeIdRaw
