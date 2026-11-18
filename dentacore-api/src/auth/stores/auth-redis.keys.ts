@@ -1,9 +1,9 @@
 // Single source of truth for key names on the sessions instance,
 // so prefixes can't drift between the guard, login, logout and MFA code.
 export const RedisKeys = {
-  session: (sessionIdHash: string) => `session:${sessionIdHash}`,
-  userSessions: (userId: string) => `user:${userId}:sessions`,
-  mfaChallenge: (challengeId: string) => `mfa:${challengeId}`,
+  session: (sessionIdHash: string) => `auth:session:${sessionIdHash}`,
+  userSessions: (userId: string) => `auth:user:${userId}:sessions`,
+  mfaChallenge: (challengeId: string) => `auth:mfa:${challengeId}`,
 } as const;
 
 // TTLs in seconds. The sessions instance runs `noeviction`, so every

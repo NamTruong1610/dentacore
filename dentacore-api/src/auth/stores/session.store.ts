@@ -3,6 +3,7 @@ import { RedisKeys, RedisTtl } from './auth-redis.keys.js';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';
 import { Redis } from 'ioredis';
+import { RedisUtils } from '../../redis/redis.utils.js';
 
 
 @Injectable()
@@ -10,14 +11,9 @@ export class SessionStore {
   constructor(
     @Inject(REDIS_AUTH) private readonly redis: Redis,
     private readonly tokenService: TokenService,
+    private readonly redisUtils: RedisUtils
   ) { }
 
-  private assertExecOk(results: [Error | null, unknown][] | null, context: string) {
-    if (!results) throw new Error(`${context}: transaction aborted`);
-    for (const result of results) {
-      if (result[0]) throw new Error(`Error ${result[0].name}: transaction aborted`);
-    }
-  }
 
   private readonly logger = new Logger(SessionStore.name);
 
@@ -62,7 +58,7 @@ export class SessionStore {
         .expire(RedisKeys.userSessions(employeeId), sessionAbsolute, 'NX')
         .expire(RedisKeys.userSessions(employeeId), sessionAbsolute, 'GT')
         .exec();
-      this.assertExecOk(results, 'session create');
+      this.redisUtils.assertExecOk(results, 'session create');
     } catch (err) {
       await this.undoCreate(employeeId, sessionIdHash);
       throw err;
@@ -114,7 +110,7 @@ export class SessionStore {
       .del(RedisKeys.session(sessionIdHash))
       .srem(RedisKeys.userSessions(employeeId), sessionIdHash)
       .exec()
-    this.assertExecOk(results, 'session revoked');
+    this.redisUtils.assertExecOk(results, 'session revoked');
   }
   async pruneExpired(employeeId: string) {
     const hashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
@@ -137,6 +133,10 @@ export class SessionStore {
     if (expiredSessionHashes.length > 0) {
       await this.redis.srem(RedisKeys.userSessions(employeeId), expiredSessionHashes);
     }
+  }
+
+  async registerAttempt() {
+    
   }
 }
 

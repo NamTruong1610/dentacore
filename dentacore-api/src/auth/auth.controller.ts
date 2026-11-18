@@ -27,7 +27,7 @@ export class AuthController {
     const { sessionIdRaw, rememberMe, absoluteExpiresAt } = await this.authService.verifyOtp(verifyOtpDto)
     this.adapterHost.httpAdapter.setCookie(res, '__Host-sid', sessionIdRaw, {
       sameSite: 'strict',
-      maxAge: rememberMe === true ? Math.floor(absoluteExpiresAt / 1000) : undefined, 
+      maxAge: rememberMe === true ? Math.floor((absoluteExpiresAt - Date.now()) / 1000) : undefined, 
       secure: true,
       httpOnly: true,
     });

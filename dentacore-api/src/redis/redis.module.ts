@@ -2,6 +2,7 @@ import { Global, Inject, Logger, Module, OnApplicationShutdown } from '@nestjs/c
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { REDIS_AUTH } from './redis.constants.js';
+import { RedisUtils } from './redis.utils.js';
 
 @Global()
 @Module({
@@ -26,8 +27,9 @@ import { REDIS_AUTH } from './redis.constants.js';
         return client;
       },
     },
+    RedisUtils
   ],
-  exports: [REDIS_AUTH],
+  exports: [REDIS_AUTH, RedisUtils],
 })
 export class RedisModule implements OnApplicationShutdown {
   constructor(@Inject(REDIS_AUTH) private readonly client: Redis) {}

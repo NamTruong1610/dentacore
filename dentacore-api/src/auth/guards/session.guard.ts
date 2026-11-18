@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { SessionStore } from '../stores/session.store.js';
+import { SESSION_COOKIE } from '../auth.constants.js';
 
 @Injectable()
 export class SessionGuard implements CanActivate {
@@ -13,7 +14,7 @@ export class SessionGuard implements CanActivate {
     context: ExecutionContext,
   ): Promise<boolean> {
     const request = context.switchToHttp().getRequest()
-    const sessionIdRaw = request.cookies['__Host-sid']
+    const sessionIdRaw = request.cookies[SESSION_COOKIE]
     if (typeof sessionIdRaw !== 'string' || sessionIdRaw === '') throw new UnauthorizedException();
     const sessionIdHash = this.tokenService.digest(sessionIdRaw)
 
