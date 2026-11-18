@@ -61,21 +61,18 @@ export class MfaChallengeStore {
   }
 
   async registerAttempt(mfaChallengeIdHash: string) {
-    const attempts = await this.redis.incr(RedisKeys.mfaAttempts(mfaChallengeIdHash))
-    try {
-      if (attempts > MAX_OTP_ATTEMPTS) {
-        const results = await this.redis
-          .multi()
-          .del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
-          .del(RedisKeys.mfaAttempts(mfaChallengeIdHash))
-          .exec()
-        this.redisUtils.assertExecOk(results, 'challenge deleted')
-        return false
-      }
-      return true;
-    } catch (error) {
-      throw error;
+    const results = await this.redis
+      .multi()
+      .incr(RedisKeys.mfaAttempts(mfaChallengeIdHash))
+      .expire(RedisKeys.mfaAttempts(mfaChallengeIdHash), RedisTtl.mfaChallenge, 'NX')
+      .exec();
+    this.redisUtils.assertExecOk(results, 'mfa attempt');
+    const attempts = results![0][1] as number;
+    if (attempts > MAX_OTP_ATTEMPTS) {
+      await this.redis.del(RedisKeys.mfaChallenge(mfaChallengeIdHash))
+      return false
     }
+    return true;
   }
 }
 
