@@ -13,7 +13,6 @@ model Employee {
   mfaCredentials MfaCredentials?
   phones         Phone[]
   emails         Email[]
-  roles          Role[]
   inviteTokens   InviteToken[]
 
   createdAt     DateTime       @default(now())

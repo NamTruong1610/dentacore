@@ -166,8 +166,7 @@ export class InvitationService {
     })
 
     // Delete pending payload from Redis. No outbox the because the invite token is consumed, subsequent access to the invite link will be declined and the Redis payload can time out on its own
-    const deleted = await this.pendingInvitationStore.delete(inviteTokenHash);
-    if (!deleted) throw new BadRequestException('Challenge deletion failed');
+    await this.pendingInvitationStore.delete(inviteTokenHash);
   }
 
 }
