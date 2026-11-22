@@ -20,7 +20,6 @@ export class PendingInvitationStore {
     @Inject(REDIS_AUTH) private readonly redis: Redis,
   ) { }
 
-  private readonly logger = new Logger(PendingInvitationStore.name);
   async save(inviteTokenHash: string, data: PendingActivation, tokenExpiresAt: Date) {
     const remaining = Math.floor((tokenExpiresAt.getTime() - Date.now()) / 1000);
     const remainingTtl = Math.min(ACTIVATION_TTL_SECONDS, remaining)

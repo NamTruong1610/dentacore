@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { RedisKeys, RedisTtl } from './auth-redis.keys.js';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';
@@ -15,7 +15,6 @@ export class MfaChallengeStore {
     private readonly redisUtils: RedisUtils
   ) { }
 
-  private readonly logger = new Logger(MfaChallengeStore.name);
 
   async create(employeeId: string, rememberMe: boolean) {
     // Create pending mfa challenge
