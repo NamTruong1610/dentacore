@@ -1,11 +1,13 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { LoginPasswordDto } from './dto/login-password.dto.js';
 import { AuthService } from './auth.service.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { HttpAdapterHost } from '@nestjs/core';
 import { SESSION_COOKIE } from './auth.constants.js';
+import { SessionGuard } from './guards/session.guard.js';
 
 @Controller('auth')
+@UseGuards(SessionGuard)
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

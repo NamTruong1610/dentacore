@@ -6,10 +6,13 @@ import { EmployeeModule } from '../employee/employee.module.js';
 import { MfaModule } from '../mfa/mfa.module.js';
 import { SessionStore } from './stores/session.store.js';
 import { MfaChallengeStore } from './stores/mfa-challenge.store.js';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [CryptoModule, EmployeeModule, MfaModule],
-  providers: [AuthService, SessionStore, MfaChallengeStore],
+  providers: [
+    AuthService, SessionStore, MfaChallengeStore,
+  ],
   controllers: [AuthController],
 })
 export class AuthModule {}

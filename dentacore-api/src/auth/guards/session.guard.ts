@@ -2,17 +2,27 @@ import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedExceptio
 import { TokenService } from '../../common/crypto/token.service.js';
 import { SessionStore } from '../stores/session.store.js';
 import { SESSION_COOKIE } from '../auth.constants.js';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 
 @Injectable()
 export class SessionGuard implements CanActivate {
   constructor(
     private readonly tokenService: TokenService,
-    private readonly sessionStore: SessionStore
+    private readonly sessionStore: SessionStore,
+    private reflector: Reflector
   ) { }
 
   async canActivate(
     context: ExecutionContext,
   ): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
     const request = context.switchToHttp().getRequest()
     const sessionIdRaw = request.cookies[SESSION_COOKIE]
     if (typeof sessionIdRaw !== 'string' || sessionIdRaw === '') throw new UnauthorizedException();
