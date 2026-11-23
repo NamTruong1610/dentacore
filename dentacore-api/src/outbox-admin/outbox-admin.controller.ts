@@ -2,7 +2,6 @@ import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } 
 import { OutboxDeadLetters } from '@nestjs/outbox';
 
 @Controller('admin/outbox')
-@UseGuards(/* your admin/auth guard */)
 export class OutboxAdminController {
   constructor(private readonly outboxDeadLetters: OutboxDeadLetters) {}
 
