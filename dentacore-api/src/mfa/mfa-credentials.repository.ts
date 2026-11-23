@@ -7,7 +7,7 @@ import { Prisma } from "../generated/prisma/client.js";
 export class MfaCredentialsRepository {
   constructor(private readonly txHost: TransactionHost<TransactionalAdapterPrisma>) { }
 
-  async saveInviteMfaCredentials(employeeId: string, encryptedSecret: string, timeStep: number) {
+  async create(employeeId: string, encryptedSecret: string, timeStep: number) {
     try {
       return await this.txHost.tx.mfaCredentials.create({
         data: { encryptedSecret, employeeId, lastUsedTimeStep: timeStep }
@@ -25,7 +25,7 @@ export class MfaCredentialsRepository {
 
   }
 
-  async findAndUpdateTimeStepMany(employeeId: string, newTimeStep: number) {
+  async advanceLastUsedTimeStep(employeeId: string, newTimeStep: number) {
     const { count } = await this.txHost.tx.mfaCredentials.updateMany({
       where: {
         employeeId,
@@ -35,6 +35,18 @@ export class MfaCredentialsRepository {
     });
 
     return count === 1
+  }
+
+  async findByEmployeeId(employeeId: string) {
+    return await this.txHost.tx.mfaCredentials.findUnique({
+      select: {
+        encryptedSecret: true,
+        lastUsedTimeStep: true
+      },
+      where: {
+        employeeId
+      }
+    })
   }
 
 } 

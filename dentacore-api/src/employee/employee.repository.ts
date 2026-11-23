@@ -87,7 +87,6 @@ export class EmployeeRepository {
     return await this.txHost.tx.employee.findFirst({
       select: {
         id: true,
-        roles: true,
         passwordHash: true,
       },
       where: {
@@ -102,14 +101,7 @@ export class EmployeeRepository {
   async findActiveEmployeeById(employeeId: string) {
     return await this.txHost.tx.employee.findFirst({
       select: {
-        id: true,
-        roles: true,
-        mfaCredentials: {
-          select: {
-            encryptedSecret: true,
-            lastUsedTimeStep: true
-          }
-        }
+        id: true
       },
       where: {
         id: employeeId,

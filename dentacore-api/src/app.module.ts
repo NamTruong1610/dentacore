@@ -52,16 +52,17 @@ import { validateEnv } from './config/env.validation.js';
       useFactory: (config: ConfigService) => ({
         stores: [createKeyv(config.getOrThrow<string>('REDIS_CACHE_URL'))],
       }),
-    })
+    }),
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
-      provide: PostgresOutboxStore,
+      provide: PostgresOutboxStore, 
       inject: [PrismaService, OutboxStorage],
       useFactory: (prisma: PrismaService, storage: OutboxStorage) =>
         new PostgresOutboxStore({ executor: fromPrisma(prisma) }, storage),
+      
     },
   ],
 })
