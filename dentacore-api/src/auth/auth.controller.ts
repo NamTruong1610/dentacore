@@ -5,9 +5,10 @@ import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { HttpAdapterHost } from '@nestjs/core';
 import { SESSION_COOKIE } from './auth.constants.js';
 import { SessionGuard } from './guards/session.guard.js';
+import { Public } from './decorators/public.decorator.js';
 
 @Controller('auth')
-@UseGuards(SessionGuard)
+@Public()
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
