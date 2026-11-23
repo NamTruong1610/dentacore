@@ -21,6 +21,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { validateEnv } from './config/env.validation.js';
 import { MfaModule } from './mfa/mfa.module.js';
+import { APP_GUARD } from '@nestjs/core';
+import { SessionGuard } from './auth/guards/session.guard.js';
 
 @Module({
   imports: [
@@ -60,11 +62,16 @@ import { MfaModule } from './mfa/mfa.module.js';
   providers: [
     AppService,
     {
-      provide: PostgresOutboxStore,
+      provide: PostgresOutboxStore, 
       inject: [PrismaService, OutboxStorage],
       useFactory: (prisma: PrismaService, storage: OutboxStorage) =>
         new PostgresOutboxStore({ executor: fromPrisma(prisma) }, storage),
+      
     },
+    {
+      provide: APP_GUARD,
+      useClass: SessionGuard
+    }
   ],
 })
 export class AppModule implements NestModule {
