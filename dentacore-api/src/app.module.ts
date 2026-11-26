@@ -10,7 +10,7 @@ import { OutboxModule, OutboxStorage } from '@nestjs/outbox';
 import { fromPrisma, PostgresOutboxStore } from '@nestjs/outbox/postgres';
 import { OutboxAdminModule } from './outbox-admin/outbox-admin.module.js';
 import { MailModule } from './mail/mail.module.js';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { ClsModule } from 'nestjs-cls';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
