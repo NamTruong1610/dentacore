@@ -28,7 +28,7 @@ export class SessionStore {
     }
   }
 
-  async create(employeeId: string, rememberMe: boolean) {
+  async create(employeeId: string, rememberMe: boolean, ip: string, userAgent: string) {
 
     const sessionIdRaw = this.tokenService.generate()
     const sessionIdHash = this.tokenService.digest(sessionIdRaw)

@@ -37,7 +37,7 @@ export class AuthService {
     return mfaChallengeIdRaw 
   }
 
-  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+  async verifyOtp(verifyOtpDto: VerifyOtpDto, ip: string, userAgent: string) {
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
 
@@ -72,7 +72,7 @@ export class AuthService {
     }
 
     // Create new session
-    const { sessionIdRaw, absoluteExpiresAt } = await this.sessionStore.create(employeeRecord.id, rememberMe)
+    const { sessionIdRaw, absoluteExpiresAt } = await this.sessionStore.create(employeeRecord.id, rememberMe, ip, userAgent)
 
     
     return { sessionIdRaw, absoluteExpiresAt, rememberMe }

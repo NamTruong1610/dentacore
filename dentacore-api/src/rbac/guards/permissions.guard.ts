@@ -1,7 +1,6 @@
 
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PermissionCacheStore } from '../stores/permission-cache.store.js';
 import { PermissionService } from '../permission.service.js';
 import { IS_PUBLIC_KEY } from '../../auth/decorators/public.decorator.js';
 
@@ -10,7 +9,6 @@ import { IS_PUBLIC_KEY } from '../../auth/decorators/public.decorator.js';
 export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly permissionStore: PermissionCacheStore,
     private readonly permissionService: PermissionService
   ) { }
   async canActivate(
@@ -18,7 +16,7 @@ export class PermissionsGuard implements CanActivate {
   ) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()]);
     if (isPublic) return true;
-    
+
     const required = this.reflector.getAllAndOverride('permission', [context.getHandler(), context.getClass()]);
 
     if (!required) throw new ForbiddenException();
