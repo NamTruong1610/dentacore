@@ -41,8 +41,8 @@ import { RedisUtils } from './redis.utils.js';
         });
 
         // Log only. ioredis reconnects on its own; throwing here would crash the process.
-        client.on('error', (err) => logger.error(`Session Redis error: ${err.message}`));
-        client.on('ready', () => logger.log('Connected to session Redis'));
+        client.on('error', (err) => logger.error(`Cache Redis error: ${err.message}`));
+        client.on('ready', () => logger.log('Connected to cache Redis'));
 
         return client;
       },

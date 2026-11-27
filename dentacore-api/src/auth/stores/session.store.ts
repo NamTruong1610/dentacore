@@ -49,7 +49,7 @@ export class SessionStore {
       const results = await this.redis.multi()
         .set(RedisKeys.session(sessionIdHash), JSON.stringify({
           id: employeeId,
-          userAgent: userAgent && userAgent.slice(0, 256),
+          userAgent: userAgent?.slice(0, 256) ?? '',
           ip,
           absoluteExpiresAt,
           rememberMe
