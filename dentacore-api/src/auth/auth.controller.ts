@@ -24,7 +24,7 @@ export class AuthController {
   async verifyOtp(
     @Body() verifyOtpDto: VerifyOtpDto,
     @Ip() ip: string,
-    @Headers('user-agent') userAgent: string,
+    @Headers('user-agent') userAgent: string | undefined,
     // passthrough:true here leaves response handling to framework.
     // Otherwise you would need to send response manually, like: `res.json({data})`
     @Res({ passthrough: true }) res: Response,

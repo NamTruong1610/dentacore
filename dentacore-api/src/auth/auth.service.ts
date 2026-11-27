@@ -37,7 +37,7 @@ export class AuthService {
     return mfaChallengeIdRaw 
   }
 
-  async verifyOtp(verifyOtpDto: VerifyOtpDto, ip: string, userAgent: string) {
+  async verifyOtp(verifyOtpDto: VerifyOtpDto, ip: string, userAgent: string | undefined) {
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
 

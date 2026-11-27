@@ -28,7 +28,7 @@ export class SessionStore {
     }
   }
 
-  async create(employeeId: string, rememberMe: boolean, ip: string, userAgent: string) {
+  async create(employeeId: string, rememberMe: boolean, ip: string, userAgent: string | undefined) {
 
     const sessionIdRaw = this.tokenService.generate()
     const sessionIdHash = this.tokenService.digest(sessionIdRaw)
@@ -49,7 +49,7 @@ export class SessionStore {
       const results = await this.redis.multi()
         .set(RedisKeys.session(sessionIdHash), JSON.stringify({
           id: employeeId,
-          userAgent: userAgent.slice(0, 256),
+          userAgent: userAgent && userAgent.slice(0, 256),
           ip,
           absoluteExpiresAt,
           rememberMe
