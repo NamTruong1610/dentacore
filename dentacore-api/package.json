@@ -23,10 +23,8 @@
     "contract:emit": "prisma contract emit"
   },
   "dependencies": {
-    "@keyv/redis": "^6.1.0",
     "@nestjs-cls/transactional": "^4.0.2",
     "@nestjs-cls/transactional-adapter-prisma": "^2.0.2",
-    "@nestjs/cache-manager": "^12.0.4",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.1.1",
     "@nestjs/core": "^12.0.1",
@@ -36,7 +34,6 @@
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "bcrypt": "^6.0.0",
-    "cache-manager": "^7.2.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",

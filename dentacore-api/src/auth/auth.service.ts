@@ -1,4 +1,4 @@
-import { Inject, Injectable, RequestTimeoutException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginPasswordDto } from './dto/login-password.dto.js';
 import { TokenService } from '../common/crypto/token.service.js';
 import { EmployeeService } from '../employee/employee.service.js';
@@ -7,8 +7,6 @@ import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { SessionStore } from './stores/session.store.js';
 import { MfaChallengeStore } from './stores/mfa-challenge.store.js';
 import { MfaService } from '../mfa/mfa.service.js';
-
-
 
 @Injectable()
 export class AuthService {
@@ -39,7 +37,7 @@ export class AuthService {
     return mfaChallengeIdRaw 
   }
 
-  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+  async verifyOtp(verifyOtpDto: VerifyOtpDto, ip: string, userAgent: string | undefined) {
     const mfaChallengeIdHash = this.tokenService.digest(verifyOtpDto.mfaChallengeIdRaw)
 
 
@@ -74,7 +72,7 @@ export class AuthService {
     }
 
     // Create new session
-    const { sessionIdRaw, absoluteExpiresAt } = await this.sessionStore.create(employeeRecord.id, rememberMe)
+    const { sessionIdRaw, absoluteExpiresAt } = await this.sessionStore.create(employeeRecord.id, rememberMe, ip, userAgent)
 
     
     return { sessionIdRaw, absoluteExpiresAt, rememberMe }

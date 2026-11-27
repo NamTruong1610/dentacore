@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { SessionStore } from '../stores/session.store.js';
 import { SESSION_COOKIE } from '../auth.constants.js';

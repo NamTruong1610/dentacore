@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RedisKeys, RedisTtl } from './auth-redis.keys.js';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';
@@ -28,7 +28,7 @@ export class SessionStore {
     }
   }
 
-  async create(employeeId: string, rememberMe: boolean) {
+  async create(employeeId: string, rememberMe: boolean, ip: string, userAgent: string | undefined) {
 
     const sessionIdRaw = this.tokenService.generate()
     const sessionIdHash = this.tokenService.digest(sessionIdRaw)
@@ -49,8 +49,8 @@ export class SessionStore {
       const results = await this.redis.multi()
         .set(RedisKeys.session(sessionIdHash), JSON.stringify({
           id: employeeId,
-          userAgent: '',
-          ip: '',
+          userAgent: userAgent?.slice(0, 256) ?? '',
+          ip,
           absoluteExpiresAt,
           rememberMe
         }), 'EX', sessionIdle)
@@ -67,7 +67,7 @@ export class SessionStore {
     // Prune expired sessions
     try {
       await this.pruneExpired(employeeId)
-    } catch (error) {
+    } catch  {
       this.logger.error(`Failed to prune expired sessions`);
     }
 

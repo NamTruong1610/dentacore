@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer"
-import { IsNotEmpty, IsString, IsStrongPassword, Matches, MaxLength, MinLength } from "class-validator"
+import { IsNotEmpty, IsString, Matches } from "class-validator"
 
 export class TOTPVerificationDto {
   @IsNotEmpty()
