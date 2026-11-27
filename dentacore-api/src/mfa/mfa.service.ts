@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { generateSecret, generate, verify, generateURI } from "otplib";
+import { Injectable } from '@nestjs/common';
+import { generateSecret, verify, generateURI } from "otplib";
 import { SecretCipherService } from '../common/crypto/secret-cipher.service.js';
 import { MfaCredentialsRepository } from './mfa-credentials.repository.js';
 

@@ -1,5 +1,5 @@
 
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionCacheStore } from '../stores/permission-cache.store.js';
 import { PermissionService } from '../permission.service.js';

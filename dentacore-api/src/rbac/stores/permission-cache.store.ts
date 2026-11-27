@@ -1,9 +1,7 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
-import { TokenService } from '../../common/crypto/token.service.js';
-import { REDIS_AUTH, REDIS_CACHE } from '../../redis/redis.constants.js';
+import { REDIS_CACHE } from '../../redis/redis.constants.js';
 import { Redis } from 'ioredis';
-import { RedisUtils } from '../../redis/redis.utils.js';
 import { RedisKeys, RedisTtl } from './permission-redis.keys.js';
 
 

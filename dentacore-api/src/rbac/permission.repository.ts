@@ -1,7 +1,7 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { Injectable } from '@nestjs/common';
-import { ActiveStatus, InviteStatus } from '../generated/prisma/enums.js';
+import { ActiveStatus } from '../generated/prisma/enums.js';
 
 @Injectable()
 export class PermissionRepository {

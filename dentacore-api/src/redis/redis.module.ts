@@ -31,7 +31,7 @@ import { RedisUtils } from './redis.utils.js';
       provide: REDIS_CACHE, 
       inject: [ConfigService],
       useFactory: (config: ConfigService): Redis => {
-        const logger = new Logger('RedisSession');
+        const logger = new Logger('RedisCache');
 
         const client = new Redis(config.getOrThrow<string>('REDIS_CACHE_URL'), {
           // Batches concurrent commands from many requests into one round trip.

@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { RedisKeys, RedisTtl } from './auth-redis.keys.js';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';
@@ -67,7 +67,7 @@ export class SessionStore {
     // Prune expired sessions
     try {
       await this.pruneExpired(employeeId)
-    } catch (error) {
+    } catch  {
       this.logger.error(`Failed to prune expired sessions`);
     }
 
