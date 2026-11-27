@@ -8,8 +8,6 @@ import { SessionStore } from './stores/session.store.js';
 import { MfaChallengeStore } from './stores/mfa-challenge.store.js';
 import { MfaService } from '../mfa/mfa.service.js';
 
-
-
 @Injectable()
 export class AuthService {
   constructor(

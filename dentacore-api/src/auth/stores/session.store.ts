@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RedisKeys, RedisTtl } from './auth-redis.keys.js';
 import { TokenService } from '../../common/crypto/token.service.js';
 import { REDIS_AUTH } from '../../redis/redis.constants.js';

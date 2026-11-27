@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsNotEmpty, IsString } from "class-validator";
+import { IsEmail, IsNotEmpty } from "class-validator";
 
 export class InviteEmployeeDto {
   @IsEmail()
