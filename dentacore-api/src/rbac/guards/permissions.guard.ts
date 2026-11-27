@@ -26,20 +26,10 @@ export class PermissionsGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const { id } = request.user;
 
-    // Get user payload from Redis cache store and match their role with permission
-    // Check cache hit
-    let permissionSet = await this.permissionStore.get(id)
-
-    if (!permissionSet) {
-      // Miss, load new cache
-      const permissions = await this.permissionService.getPermissionsByEmployeeId(id)
-
-      await this.permissionStore.create(id, permissions)
-
-      permissionSet = await this.permissionStore.get(id)
-    }
+    const permissionSet = await this.permissionService.getPermissionsByEmployeeId(id)
+    
     // Match permission set with { action, target }
-    if (!permissionSet?.has(`${action}:${target}`)) {
+    if (!permissionSet.has(`${action}:${target}`)) {
       throw new ForbiddenException();
     }
 

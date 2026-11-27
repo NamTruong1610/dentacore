@@ -54,7 +54,7 @@ import { RedisUtils } from './redis.utils.js';
 export class RedisModule implements OnApplicationShutdown {
   constructor(
     @Inject(REDIS_AUTH) private readonly authClient: Redis,
-    @Inject(REDIS_AUTH) private readonly cacheClient: Redis
+    @Inject(REDIS_CACHE) private readonly cacheClient: Redis
   ) {}
 
   // quit() lets in-flight commands finish; disconnect() would drop them.

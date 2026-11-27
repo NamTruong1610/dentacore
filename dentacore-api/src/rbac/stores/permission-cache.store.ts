@@ -21,10 +21,7 @@ export class PermissionCacheStore {
       return null
     }
     const parsedPayload = JSON.parse(rawPayload)
-    const permissionSet = new Set<string>();
-    for (const { action, target } of parsedPayload) {
-      permissionSet.add(`${action}:${target}`)
-    }
+    const permissionSet = new Set<string>(parsedPayload);
     return permissionSet
   }
 
