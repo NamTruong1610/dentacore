@@ -9,9 +9,10 @@ import { MfaChallengeStore } from './stores/mfa-challenge.store.js';
 import { APP_GUARD } from '@nestjs/core';
 import { SessionGuard } from './guards/session.guard.js';
 import { PermissionsGuard } from '../rbac/guards/permissions.guard.js';
+import { RbacModule } from '../rbac/rbac.module.js';
 
 @Module({
-  imports: [CryptoModule, EmployeeModule, MfaModule],
+  imports: [CryptoModule, EmployeeModule, MfaModule, RbacModule],
   providers: [
     AuthService, SessionStore, MfaChallengeStore,
     { provide: APP_GUARD, useClass: SessionGuard },
