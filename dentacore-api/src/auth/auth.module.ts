@@ -13,6 +13,7 @@ import { RbacModule } from '../rbac/rbac.module.js';
 
 @Module({
   imports: [CryptoModule, EmployeeModule, MfaModule, RbacModule],
+  exports: [SessionStore],
   providers: [
     AuthService, SessionStore, MfaChallengeStore,
     { provide: APP_GUARD, useClass: SessionGuard },

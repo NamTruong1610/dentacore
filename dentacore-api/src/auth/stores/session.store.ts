@@ -112,6 +112,21 @@ export class SessionStore {
       .exec()
     this.redisUtils.assertExecOk(results, 'session revoked');
   }
+
+  async revokeAll(employeeId: string) {
+    const sessionIdHashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
+    if (sessionIdHashes.length === 0) return
+
+    const tx = this.redis.multi()
+    for (const sid of sessionIdHashes) {
+      tx.del(RedisKeys.session(sid))
+    }
+    tx.srem(RedisKeys.userSessions(employeeId), sessionIdHashes)
+
+    const results = await tx.exec()
+    this.redisUtils.assertExecOk(results, 'revoke all sessions')
+  }
+
   async pruneExpired(employeeId: string) {
     const hashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
     if (hashes.length === 0) return

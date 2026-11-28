@@ -19,6 +19,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { RbacModule } from './rbac/rbac.module.js';
+import { PasswordResetModule } from './password-reset/password-reset.module.js';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { RbacModule } from './rbac/rbac.module.js';
     AuthModule,
     RedisModule,
     RbacModule,
+    PasswordResetModule,
   ],
   controllers: [AppController],
   providers: [

@@ -26,6 +26,10 @@ export class EmployeeService {
     return await this.employeeRepo.findActiveEmployeeByNumber(employeeNo)
   }
 
+  async findPasswordResettable(employeeNo: string) {
+    return await this.employeeRepo.findPasswordResettableByEmployeeNumber(employeeNo)
+  }
+
   async findActiveByEmployeeId(employeeId: string) {
     return await this.employeeRepo.findActiveEmployeeById(employeeId)
   }
@@ -36,5 +40,9 @@ export class EmployeeService {
 
   async activateWithPasswordHash(id: string, passwordHash: string) {
     return await this.employeeRepo.savePasswordHash(id, passwordHash)
+  }
+
+  async saveNewPassword(id: string, passwordHash: string) {
+    return await this.employeeRepo.updateNewPassword(id, passwordHash)
   }
 }
