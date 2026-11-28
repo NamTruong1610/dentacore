@@ -12,6 +12,7 @@ import { PasswordResetTokenDto } from './dtos/password-reset-token.dto.js';
 import { PasswordResetConfirmDto } from './dtos/password-reset-confirm.dto.js';
 import { MfaService } from '../mfa/mfa.service.js';
 import { PasswordHasher } from '../common/crypto/password-hasher.service.js';
+import { SessionStore } from '../auth/stores/session.store.js';
 
 @Injectable()
 export class PasswordResetService {
@@ -23,7 +24,8 @@ export class PasswordResetService {
     private readonly tokenService: TokenService,
     private readonly passwordResetRepo: PasswordResetRepository,
     private readonly mailService: MailService,
-    private readonly passwordHasher: PasswordHasher
+    private readonly passwordHasher: PasswordHasher,
+    private readonly sessionStore: SessionStore
   ) { }
 
   private PASSWORD_RESET_TOKEN_DURATION: number = 15 * 60 * 1000
@@ -51,7 +53,7 @@ export class PasswordResetService {
     )
     this.outbox.notify();
   }
-  async issuePasswordReset(msg: { employeeId: string, email: string, employeeNumber: string }) {
+  async issuePasswordResetToken(msg: { employeeId: string, email: string, employeeNumber: string }) {
     const employeeRecord = await this.employeeService.findActiveByEmployeeId(msg.employeeId)
     if (!employeeRecord) return
     const rawToken = this.tokenService.generate();
@@ -100,8 +102,22 @@ export class PasswordResetService {
       if (!isSaved) {
         throw new ConflictException();
       }
-    })
 
+      // Delete all sessions
+      this.sessionStore.revokeAll(resetTokenRecord.id)
+
+      await this.outbox.add(this.txHost.tx, {
+        topic: 'password-reset.success',
+        key: resetTokenRecord.employeeId,
+        payload: {
+          email: resetTokenRecord.primaryEmail,
+        },
+      });
+    })
+    this.outbox.notify();
   }
 
+  async confirmResetSuccess(msg: { email: string }) {
+    await this.mailService.sendPasswordResetSuccess(msg.email)
+  }
 }

@@ -112,6 +112,16 @@ export class SessionStore {
       .exec()
     this.redisUtils.assertExecOk(results, 'session revoked');
   }
+
+  async revokeAll(employeeId: string) {
+    const sessionIdHashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
+    const sessionsPrunePipeline = this.redis.pipeline()
+    for (const sid of sessionIdHashes) {
+      sessionsPrunePipeline.del(sid)
+    }
+    sessionsPrunePipeline.exec()
+  }
+
   async pruneExpired(employeeId: string) {
     const hashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
     if (hashes.length === 0) return

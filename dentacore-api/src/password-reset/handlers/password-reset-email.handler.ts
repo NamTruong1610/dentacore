@@ -16,17 +16,29 @@ export class InviteEmailHandler {
 
   // middleware: { mount: true } sets up the context for HTTP requests only. Outbox handlers don’t arrive through HTTP. If you get a “no active CLS context” error in the handler, add @UseCls() to handle()
   @OnOutboxMessage('password-reset.requested', { consumer: 'password-reset-email' })
-  async handleInvite(
-    msg: { 
+  async handleRequest(
+    msg: {
       employeeId: string,
-      email: string, 
-      employeeNumber: string 
+      email: string,
+      employeeNumber: string
     },
     ctx: OutboxHandlerContext<Prisma.TransactionClient>
   ) {
     await this.txHost.withTransaction({ timeout: 15_000 }, async () =>
-      ctx.processInTransaction(this.txHost.tx, () => this.passwordResetService.issuePasswordReset(msg)),
+      ctx.processInTransaction(this.txHost.tx, () => this.passwordResetService.issuePasswordResetToken(msg)),
     );
+  }
+
+  @OnOutboxMessage('password-reset.success', { consumer: 'password-reset-email' })
+  async handleConfirmSuccess(
+    msg: {
+      email: string,
+    },
+    ctx: OutboxHandlerContext<Prisma.TransactionClient>
+  ) {
+    await this.txHost.withTransaction({ timeout: 15_000 }, async () =>
+      ctx.processInTransaction(this.txHost.tx, () => this.passwordResetService.confirmResetSuccess(msg))
+    )
   }
 
 }

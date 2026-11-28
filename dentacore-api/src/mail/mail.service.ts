@@ -91,4 +91,29 @@ export class MailService {
       `,
     });
   }
+
+  async sendPasswordResetSuccess(to: string) {
+    const name = escapeHtml(to);
+    await this.transporter.sendMail({
+      from: this.config.getOrThrow<string>('MAIL_FROM'),
+      to,
+      subject: 'Your Dentacore password was changed',
+      text: [
+        `Hi ${to},`,
+        '',
+        'The password for your Dentacore account was just changed.',
+        'For your security, you have been signed out on all devices.',
+        '',
+        'If you made this change, no further action is needed.',
+        "If you didn't, contact your clinic administrator immediately so they can lock your account.",
+      ].join('\n'),
+      html: `
+        <p>Hi ${name},</p>
+        <p>The password for your Dentacore account was just changed.<br>
+        For your security, you have been signed out on all devices.</p>
+        <p>If you made this change, no further action is needed.<br>
+        If you didn't, <strong>contact your clinic administrator immediately</strong> so they can lock your account.</p>
+      `,
+    });
+  }
 }
