@@ -121,7 +121,7 @@ export class SessionStore {
     for (const sid of sessionIdHashes) {
       tx.del(RedisKeys.session(sid))
     }
-    tx.srem(RedisKeys.userSessions(employeeId), ...sessionIdHashes)
+    tx.srem(RedisKeys.userSessions(employeeId), sessionIdHashes)
 
     const results = await tx.exec()
     this.redisUtils.assertExecOk(results, 'revoke all sessions')
