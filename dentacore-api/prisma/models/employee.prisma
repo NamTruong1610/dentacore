@@ -1,19 +1,20 @@
 model Employee {
-  id             String          @id @default(uuid())
-  nationalId     String
-  employeeNumber String          @unique
-  passwordHash   String?
-  firstName      String
-  middleName     String?
-  lastName       String
-  primaryEmail   String
-  inviteStatus   InviteStatus    @default(UNINVITED)
-  activeStatus   ActiveStatus    @default(INACTIVE)
-  addresses      Address[]
-  mfaCredentials MfaCredentials?
-  phones         Phone[]
-  emails         Email[]
-  inviteTokens   InviteToken[]
+  id                  String               @id @default(uuid())
+  nationalId          String
+  employeeNumber      String               @unique
+  passwordHash        String?
+  firstName           String
+  middleName          String?
+  lastName            String
+  primaryEmail        String
+  inviteStatus        InviteStatus         @default(UNINVITED)
+  activeStatus        ActiveStatus         @default(INACTIVE)
+  addresses           Address[]
+  mfaCredentials      MfaCredentials?
+  phones              Phone[]
+  emails              Email[]
+  inviteTokens        InviteToken[]
+  passwordResetTokens PasswordResetToken[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

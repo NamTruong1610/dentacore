@@ -46,15 +46,30 @@ export class EmployeeRepository {
 
   async savePasswordHash(id: string, passwordHash: string) {
     const { count } = await this.txHost.tx.employee.updateMany({
-      where: { 
-        id, 
-        inviteStatus: InviteStatus.INVITED, 
+      where: {
+        id,
+        inviteStatus: InviteStatus.INVITED,
         activeStatus: ActiveStatus.INACTIVE,
-        deletedAt: null 
+        deletedAt: null
       },
       data: {
         passwordHash,
         activeStatus: ActiveStatus.ACTIVE,
+      }
+    })
+    return count === 1
+  }
+
+  async updateNewPassword(id: string, passwordHash: string) {
+    const { count } = await this.txHost.tx.employee.updateMany({
+      where: {
+        id,
+        inviteStatus: InviteStatus.INVITED,
+        activeStatus: ActiveStatus.ACTIVE,
+        deletedAt: null
+      },
+      data: {
+        passwordHash,
       }
     })
     return count === 1
@@ -79,7 +94,7 @@ export class EmployeeRepository {
 
   async findInvitable(id: string) {
     return await this.txHost.tx.employee.findFirst({
-      where: { id, inviteStatus: InviteStatus.INVITED, deletedAt: null },
+      where: { id, inviteStatus: InviteStatus.INVITED, activeStatus: ActiveStatus.INACTIVE, deletedAt: null },
     });
   }
 
@@ -88,6 +103,21 @@ export class EmployeeRepository {
       select: {
         id: true,
         passwordHash: true,
+      },
+      where: {
+        employeeNumber,
+        deletedAt: null,
+        inviteStatus: InviteStatus.INVITED,
+        activeStatus: ActiveStatus.ACTIVE
+      }
+    })
+  }
+
+  async findPasswordResettableByEmployeeNumber(employeeNumber: string) {
+    return await this.txHost.tx.employee.findFirst({
+      select: {
+        id: true,
+        primaryEmail: true
       },
       where: {
         employeeNumber,

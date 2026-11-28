@@ -16,8 +16,6 @@ import { TOTPVerificationDto } from './dto/totp-verification.dto.js';
 import { PendingInvitationStore } from './stores/pending-invitation.store.js';
 import { MfaService } from '../mfa/mfa.service.js';
 
-type InvitePayload = { employeeId: string; email: string; issuerNationalId: string, employeeNumber: string };
-
 @Injectable()
 export class InvitationService {
   constructor(
@@ -70,7 +68,12 @@ export class InvitationService {
     this.outbox.notify();
   }
 
-  async issueInvite(msg: InvitePayload) {
+  async issueInvite(msg: {
+    employeeId: string, 
+    email: string, 
+    issuerNationalId: string, 
+    employeeNumber: string 
+  }) {
     // Before the message is processed, a small window where a staff user deletes the invited user could make that user ineligible for issuance of an invite token in the database and invite email. 
     // findInvitable is a guard that closes such window
     const employee = await this.employeeService.findInvitable(msg.employeeId);

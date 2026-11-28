@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Res, UnauthorizedException } from '@nestjs/common';
 import { LoginPasswordDto } from './dto/login-password.dto.js';
 import { TokenService } from '../common/crypto/token.service.js';
 import { EmployeeService } from '../employee/employee.service.js';
@@ -16,7 +16,7 @@ export class AuthService {
     private readonly passwordHasher: PasswordHasher,
     private readonly mfaService: MfaService,
     private readonly mfaChallengeStore: MfaChallengeStore,
-    private readonly sessionStore: SessionStore
+    private readonly sessionStore: SessionStore,
   ) { }
   async login(loginPasswordDto: LoginPasswordDto) {
 
@@ -34,7 +34,7 @@ export class AuthService {
 
     const mfaChallengeIdRaw = await this.mfaChallengeStore.create(employeeRecord.id, loginPasswordDto.rememberMe)
 
-    return mfaChallengeIdRaw 
+    return mfaChallengeIdRaw
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto, ip: string, userAgent: string | undefined) {
@@ -74,7 +74,6 @@ export class AuthService {
     // Create new session
     const { sessionIdRaw, absoluteExpiresAt } = await this.sessionStore.create(employeeRecord.id, rememberMe, ip, userAgent)
 
-    
     return { sessionIdRaw, absoluteExpiresAt, rememberMe }
   }
 }
