@@ -11,6 +11,6 @@ export class PasswordResetController {
     async requestPasswordReset(
       @Body() resetReqDto: PasswordResetRequestDto
     ) {
-      this.passwordResetService.requestPasswordReset(resetReqDto)
+      await this.passwordResetService.requestPasswordReset(resetReqDto)
     }
 }
