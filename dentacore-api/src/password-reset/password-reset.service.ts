@@ -115,10 +115,10 @@ export class PasswordResetService {
       });
     })
 
+    this.outbox.notify();
+
     // Delete all sessions
     await this.sessionStore.revokeAll(resetTokenRecord.employeeId)
-
-    this.outbox.notify();
   }
 
   async confirmResetSuccess(msg: { email: string }) {
