@@ -51,4 +51,18 @@ export class PasswordResetRepository {
     return count === 1
   }
 
+  async revokeAllActive(employeeId: string) {
+    return await this.txHost.tx.passwordResetToken.updateMany({
+      where: { 
+        employeeId, 
+        consumedAt: null, 
+        revokedAt: null, 
+        expiresAt: { gt: new Date() }
+      },
+      data: {
+        revokedAt: new Date()
+      }
+    })
+  }
+
 }

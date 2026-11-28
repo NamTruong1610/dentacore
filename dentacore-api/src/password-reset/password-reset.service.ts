@@ -54,9 +54,14 @@ export class PasswordResetService {
   }
   async issuePasswordResetToken(msg: { employeeId: string }) {
     const employeeRecord = await this.employeeService.findActiveByEmployeeId(msg.employeeId)
+
     if (!employeeRecord) return
+
+    await this.passwordResetRepo.revokeAllActive(employeeRecord.id)
+
     const rawToken = this.tokenService.generate();
     await this.passwordResetRepo.createToken(msg.employeeId, employeeRecord.primaryEmail, this.tokenService.digest(rawToken), new Date(Date.now() + this.PASSWORD_RESET_TOKEN_DURATION))
+
     await this.mailService.sendPasswordReset(
       employeeRecord.primaryEmail,
       this.acceptUrl(rawToken),
@@ -95,7 +100,7 @@ export class PasswordResetService {
         throw new BadRequestException('OTP invalid or expired');
       }
 
-      // Consume invite token
+      // Consume password reset token
       const isMatched = await this.passwordResetRepo.consumeByHash(tokenHash)
       if (!isMatched) throw new ConflictException('Token invalid or expired');
 
@@ -112,12 +117,13 @@ export class PasswordResetService {
           email: resetTokenRecord.sentToEmail,
         },
       });
+
+      // Delete all sessions
+      await this.sessionStore.revokeAll(resetTokenRecord.employeeId)
     })
 
     this.outbox.notify();
 
-    // Delete all sessions
-    await this.sessionStore.revokeAll(resetTokenRecord.employeeId)
   }
 
   async confirmResetSuccess(msg: { email: string }) {
