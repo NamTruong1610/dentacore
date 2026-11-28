@@ -7,7 +7,7 @@ import { PasswordResetService } from '../password-reset.service.js';
 
 
 @Injectable()
-export class InviteEmailHandler {
+export class PasswordResetEmailHandler {
 
   constructor(
     private readonly passwordResetService: PasswordResetService,
@@ -29,7 +29,7 @@ export class InviteEmailHandler {
     );
   }
 
-  @OnOutboxMessage('password-reset.success', { consumer: 'password-reset-email' })
+  @OnOutboxMessage('password-reset.success', { consumer: 'password-reset-success-email' })
   async handleConfirmSuccess(
     msg: {
       email: string,

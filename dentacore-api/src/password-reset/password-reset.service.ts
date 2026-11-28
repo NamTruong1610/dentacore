@@ -46,7 +46,6 @@ export class PasswordResetService {
           payload: {
             employeeId: employeeRecord.id,
             email: employeeRecord.primaryEmail,
-            employeeNumber: employeeRecord.employeeNumber,
           },
         });
       }
@@ -72,21 +71,20 @@ export class PasswordResetService {
   }
 
   async confirm(passwordResetConfirmDto: PasswordResetConfirmDto) {
-
     if (passwordResetConfirmDto.rawPassword !== passwordResetConfirmDto.retypedPassword) {
       throw new BadRequestException('Passwords do not match');
     }
 
+    const tokenHash = this.tokenService.digest(passwordResetConfirmDto.resetToken)
+    const resetTokenRecord = await this.passwordResetRepo.findActive(tokenHash)
+
+    if (!resetTokenRecord) {
+      throw new BadRequestException('Reset token invalid or expired')
+    }
 
     const passwordHash = await this.passwordHasher.hash(passwordResetConfirmDto.rawPassword)
 
     await this.txHost.withTransaction(async () => {
-      const tokenHash = this.tokenService.digest(passwordResetConfirmDto.resetToken)
-      const resetTokenRecord = await this.passwordResetRepo.findActive(tokenHash)
-
-      if (!resetTokenRecord) {
-        throw new BadRequestException('Reset token invalid or expired')
-      }
       const valid = await this.mfaService.verifyAndClaim(resetTokenRecord.employeeId, passwordResetConfirmDto.totp)
 
       if (!valid) {
@@ -104,13 +102,13 @@ export class PasswordResetService {
       }
 
       // Delete all sessions
-      this.sessionStore.revokeAll(resetTokenRecord.id)
+      await this.sessionStore.revokeAll(resetTokenRecord.employeeId)
 
       await this.outbox.add(this.txHost.tx, {
         topic: 'password-reset.success',
         key: resetTokenRecord.employeeId,
         payload: {
-          email: resetTokenRecord.primaryEmail,
+          email: resetTokenRecord.sentToEmail,
         },
       });
     })

@@ -38,7 +38,12 @@ export class PasswordResetRepository {
 
   async consumeByHash(tokenHash: string) {
     const { count } = await this.txHost.tx.passwordResetToken.updateMany({
-      where: { tokenHash, consumedAt: null },
+      where: { 
+        tokenHash, 
+        consumedAt: null, 
+        revokedAt: null, 
+        expiresAt: { gt: new Date() }
+      },
       data: {
         consumedAt: new Date()
       }

@@ -117,9 +117,10 @@ export class SessionStore {
     const sessionIdHashes = await this.redis.smembers(RedisKeys.userSessions(employeeId))
     const sessionsPrunePipeline = this.redis.pipeline()
     for (const sid of sessionIdHashes) {
-      sessionsPrunePipeline.del(sid)
+      sessionsPrunePipeline.del(RedisKeys.session(sid))
     }
-    sessionsPrunePipeline.exec()
+    sessionsPrunePipeline.del(RedisKeys.userSessions(employeeId))
+    await sessionsPrunePipeline.exec()
   }
 
   async pruneExpired(employeeId: string) {
