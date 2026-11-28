@@ -59,7 +59,7 @@ export class PasswordResetService {
     const rawToken = this.tokenService.generate();
     await this.passwordResetRepo.createToken(msg.employeeId, msg.email, this.tokenService.digest(rawToken), new Date(Date.now() + this.PASSWORD_RESET_TOKEN_DURATION))
     await this.mailService.sendPasswordReset(
-      msg.email,
+      employeeRecord.primaryEmail,
       this.acceptUrl(rawToken),
       this.PASSWORD_RESET_TOKEN_MINUTES,
     )
