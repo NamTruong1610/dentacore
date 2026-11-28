@@ -63,30 +63,30 @@ export class MailService {
 
   async sendPasswordReset(
     to: string,
-    email: string,
     resetUrl: string,
+    expiresInMinutes: number,
   ): Promise<void> {
-    const name = escapeHtml(email);
+    const name = escapeHtml(to);
     const url = escapeHtml(resetUrl);
     await this.transporter.sendMail({
       from: this.config.getOrThrow<string>('MAIL_FROM'),
       to,
       subject: 'Reset your Dentacore password',
       text: [
-        `Hi ${name},`,
+        `Hi ${to},`,
         '',
         'We received a request to reset the password for your Dentacore account.',
         '',
         `Reset your password: ${resetUrl}`,
         '',
-        `This link expires in 15 minutes and can only be used once.`,
+        `This link expires in ${expiresInMinutes} minutes and can only be used once.`,
         "If you didn't request this, you can ignore this email. Your password won't change.",
       ].join('\n'),
       html: `
         <p>Hi ${name},</p>
         <p>We received a request to reset the password for your Dentacore account.</p>
         <p><a href="${url}">Reset your password</a></p>
-        <p>This link expires in 15 minutes and can only be used once.<br>
+        <p>This link expires in ${expiresInMinutes} minutes and can only be used once.<br>
         If you didn't request this, you can ignore this email. Your password won't change.</p>
       `,
     });

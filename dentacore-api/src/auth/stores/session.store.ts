@@ -118,8 +118,8 @@ export class SessionStore {
     const sessionsPrunePipeline = this.redis.pipeline()
     for (const sid of sessionIdHashes) {
       sessionsPrunePipeline.del(RedisKeys.session(sid))
+      sessionsPrunePipeline.srem(RedisKeys.userSessions(employeeId), sid)
     }
-    sessionsPrunePipeline.del(RedisKeys.userSessions(employeeId))
     await sessionsPrunePipeline.exec()
   }
 

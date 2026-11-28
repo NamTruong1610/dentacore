@@ -28,7 +28,8 @@ export class PasswordResetService {
     private readonly sessionStore: SessionStore
   ) { }
 
-  private PASSWORD_RESET_TOKEN_DURATION: number = 15 * 60 * 1000
+  private readonly PASSWORD_RESET_TOKEN_MINUTES = 15
+  private readonly PASSWORD_RESET_TOKEN_DURATION = this.PASSWORD_RESET_TOKEN_MINUTES * 60 * 1000
   private acceptUrl(rawToken: string) {
     return `http://localhost:3000/password/reset#token=${rawToken}`
   }
@@ -57,7 +58,11 @@ export class PasswordResetService {
     if (!employeeRecord) return
     const rawToken = this.tokenService.generate();
     await this.passwordResetRepo.createToken(msg.employeeId, msg.email, this.tokenService.digest(rawToken), new Date(Date.now() + this.PASSWORD_RESET_TOKEN_DURATION))
-    await this.mailService.sendPasswordReset(msg.email, msg.email, this.acceptUrl(rawToken))
+    await this.mailService.sendPasswordReset(
+      msg.email,
+      this.acceptUrl(rawToken),
+      this.PASSWORD_RESET_TOKEN_MINUTES,
+    )
   }
 
   async validate(passwordResetTokenDto: PasswordResetTokenDto) {
@@ -101,9 +106,6 @@ export class PasswordResetService {
         throw new ConflictException();
       }
 
-      // Delete all sessions
-      await this.sessionStore.revokeAll(resetTokenRecord.employeeId)
-
       await this.outbox.add(this.txHost.tx, {
         topic: 'password-reset.success',
         key: resetTokenRecord.employeeId,
@@ -112,6 +114,10 @@ export class PasswordResetService {
         },
       });
     })
+
+    // Delete all sessions
+    await this.sessionStore.revokeAll(resetTokenRecord.employeeId)
+
     this.outbox.notify();
   }
 
