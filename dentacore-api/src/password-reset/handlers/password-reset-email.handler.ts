@@ -19,8 +19,6 @@ export class PasswordResetEmailHandler {
   async handleRequest(
     msg: {
       employeeId: string,
-      email: string,
-      employeeNumber: string
     },
     ctx: OutboxHandlerContext<Prisma.TransactionClient>
   ) {

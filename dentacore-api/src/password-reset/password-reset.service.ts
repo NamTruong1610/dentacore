@@ -45,19 +45,18 @@ export class PasswordResetService {
           topic: 'password-reset.requested',
           key: employeeRecord.id,
           payload: {
-            employeeId: employeeRecord.id,
-            email: employeeRecord.primaryEmail,
+            employeeId: employeeRecord.id
           },
         });
       }
     )
     this.outbox.notify();
   }
-  async issuePasswordResetToken(msg: { employeeId: string, email: string, employeeNumber: string }) {
+  async issuePasswordResetToken(msg: { employeeId: string }) {
     const employeeRecord = await this.employeeService.findActiveByEmployeeId(msg.employeeId)
     if (!employeeRecord) return
     const rawToken = this.tokenService.generate();
-    await this.passwordResetRepo.createToken(msg.employeeId, msg.email, this.tokenService.digest(rawToken), new Date(Date.now() + this.PASSWORD_RESET_TOKEN_DURATION))
+    await this.passwordResetRepo.createToken(msg.employeeId, employeeRecord.primaryEmail, this.tokenService.digest(rawToken), new Date(Date.now() + this.PASSWORD_RESET_TOKEN_DURATION))
     await this.mailService.sendPasswordReset(
       employeeRecord.primaryEmail,
       this.acceptUrl(rawToken),

@@ -131,7 +131,8 @@ export class EmployeeRepository {
   async findActiveEmployeeById(employeeId: string) {
     return await this.txHost.tx.employee.findFirst({
       select: {
-        id: true
+        id: true,
+        primaryEmail: true
       },
       where: {
         id: employeeId,
